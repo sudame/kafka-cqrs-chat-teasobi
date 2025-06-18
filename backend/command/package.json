@@ -1,0 +1,11 @@
+{
+  "name": "server-command",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsx build.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

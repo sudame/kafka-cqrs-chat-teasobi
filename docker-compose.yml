@@ -1,0 +1,102 @@
+services:
+  ##########################################
+  # データ保持層: 各ツールデフォルトのポートを使用
+  ##########################################
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.2
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.2
+    container_name: kafka
+    ports:
+      - '9092:9092'
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+
+  mysql:
+    image: mysql:9.3.0
+    restart: always
+    container_name: mysql
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: chotwork
+
+  ##########################################
+  # Webアプリケーション: 80xx番台のポートを使用
+  ##########################################
+  query-server:
+    build:
+      context: .
+      dockerfile: ./backend/query/Dockerfile
+    container_name: query-server
+    ports:
+      - '8080:8080'
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKER: kafka:29092
+
+  command-server:
+    build:
+      context: .
+      dockerfile: ./backend/command/Dockerfile
+    container_name: command-server
+    ports:
+      - '8081:8081'
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKER: kafka:29092
+
+  read-model-updater-server:
+    build:
+      context: .
+      dockerfile: ./backend/read-model-updater/Dockerfile
+    container_name: read-model-updater-server
+    ports:
+      - '8082:8082'
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKER: kafka:29092
+
+  ##########################################
+  # 開発用ツール: 81xx番台のポートを使用
+  ##########################################
+  phpmyadmin:
+    image: phpmyadmin:5.2.2
+    container_name: phpmyadmin
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - '8180:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: user
+      PMA_PASSWORD: password
+      PMA_AUTH_TYPE: config
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - 8181:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
