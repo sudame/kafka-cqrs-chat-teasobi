@@ -1,3 +1,15 @@
 {
-  "words": ["chotwork", "confluentinc", "healthcheck", "phpmyadmin"]
+  "words": [
+    "BOOTSTRAPSERVERS",
+    "chotwork",
+    "confluentinc",
+    "healthcheck",
+    "kafkajs",
+    "neverthrow",
+    "partitioner",
+    "Partitioners",
+    "phpmyadmin",
+    "provectuslabs"
+  ],
+  "useGitignore": true
 }
