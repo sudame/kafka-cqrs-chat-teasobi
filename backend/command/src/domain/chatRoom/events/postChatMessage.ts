@@ -1,21 +1,17 @@
-import { ChatMessage, ChatRoom } from '../../domain/chatRoom';
-import { System } from '../../domain/system';
+import { ChatMessage, ChatRoom } from '../models/chatRoom';
 
 export interface PostChatMessageEvent {
   type: 'PostMessage';
   chatRoomId: string;
   chatMessage: ChatMessage;
   createdAt: number;
+  newChatRoomVersion: number;
 }
 
-export function applyPostMessageEventToSystem(
-  system: System,
+export function applyPostMessageEventToChatRoom(
+  chatRoom: ChatRoom,
   event: PostChatMessageEvent,
-): System {
-  const newSystem = Object.assign({}, system);
-
-  const chatRoom = newSystem.rooms[event.chatRoomId];
-
+): ChatRoom {
   if (chatRoom == null) {
     throw new Error('Chat room not found.');
   }
@@ -25,7 +21,5 @@ export function applyPostMessageEventToSystem(
     messages: newMessages,
   });
 
-  newSystem.rooms[event.chatRoomId] = newChatRoom;
-
-  return newSystem;
+  return newChatRoom;
 }
