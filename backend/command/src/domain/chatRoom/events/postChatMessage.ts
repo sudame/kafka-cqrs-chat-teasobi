@@ -9,7 +9,7 @@ export interface PostChatMessageEvent {
 }
 
 export function applyPostMessageEventToChatRoom(
-  chatRoom: ChatRoom,
+  chatRoom: ChatRoom | null,
   event: PostChatMessageEvent,
 ): ChatRoom {
   if (chatRoom == null) {

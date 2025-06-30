@@ -1,22 +1,27 @@
 import { ChatRoom } from '../models/chatRoom';
-import { PostChatMessageEvent } from './postChatMessage';
+import {
+  applyCreateChatRoomEventToChatRoom,
+  CreateChatRoomEvent,
+} from './createChatRoom';
+import {
+  applyPostMessageEventToChatRoom,
+  PostChatMessageEvent,
+} from './postChatMessage';
 
-export type ChatRoomEvent = PostChatMessageEvent;
+export type ChatRoomEvent = PostChatMessageEvent | CreateChatRoomEvent;
 
 export function applyChatRoomEventToChatRoom(
-  chatRoom: ChatRoom,
+  chatRoom: ChatRoom | null,
   event: ChatRoomEvent,
 ): ChatRoom {
   switch (event.type) {
+    case 'CreateChatRoom': {
+      return applyCreateChatRoomEventToChatRoom(chatRoom, event);
+    }
     case 'PostMessage': {
-      const chatMessage = event.chatMessage;
-      return {
-        ...chatRoom,
-        version: event.newChatRoomVersion,
-        messages: [...chatRoom.messages, chatMessage],
-      };
+      return applyPostMessageEventToChatRoom(chatRoom, event);
     }
     default:
-      throw new Error(`Unknown event type: ${event.type}`);
+      throw new Error(`Unknown event type: ${event}`);
   }
 }

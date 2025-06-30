@@ -1,28 +1,25 @@
 import { ulid } from 'ulid';
 import { PostMessageCommand } from '../commands/postChatMessage';
-import { canPostMessage, ChatRoom, newChatRoom } from '../models/chatRoom';
+import { canPostMessage } from '../models/chatRoom';
 import { PostChatMessageEvent } from '../events/postChatMessage';
 import { Kafka } from 'kafkajs';
-import { DomainObjectId } from '../../../core/domainObjectId';
-import { ChatRoomEvent, applyChatRoomEventToChatRoom } from '../events';
-import { rebuildDomainObject } from '../../../tools/rebuildDomainObject';
-
-const rebuildChatRoom = (chatRoomId: DomainObjectId, kafka: Kafka) =>
-  rebuildDomainObject<ChatRoom, ChatRoomEvent>({
-    kafka,
-    domainObjectId: chatRoomId,
-    initialDomainObject: newChatRoom(chatRoomId),
-    applyFunction: applyChatRoomEventToChatRoom,
-  });
+import { rebuildChatRoom } from '.';
 
 export async function handlePostMessageCommand(
   command: PostMessageCommand,
   deps: {
     kafka: Kafka;
   },
-) {
+): Promise<void> {
+  const existingChatRoom = await rebuildChatRoom(
+    command.chatRoomId,
+    deps.kafka,
+  );
+
+  console.log(existingChatRoom);
+
   const validation = canPostMessage({
-    chatRoom: await rebuildChatRoom(command.chatRoomId, deps.kafka),
+    chatRoom: existingChatRoom,
     operatorUserId: command.authorUserId,
     messageContent: command.content,
   });

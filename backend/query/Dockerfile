@@ -5,8 +5,7 @@ WORKDIR /app
 # 依存のインストール
 COPY ../../package.json .
 COPY ./package.json ./backend/query/package.json
-RUN --mount=type=cache,target=/root/.npm npm -w backend/query install
-RUN --mount=type=cache,target=/root/.npm npm install --ignore-workspace-root-check
+RUN --mount=type=cache,target=/root/.npm npm install
 
 # ビルド
 COPY . . 

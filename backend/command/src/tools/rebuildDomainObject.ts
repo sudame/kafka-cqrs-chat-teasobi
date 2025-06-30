@@ -2,12 +2,10 @@ import { Kafka, Partitioners } from 'kafkajs';
 import { ulid } from 'ulid';
 import { DomainObjectId } from '../core/domainObjectId';
 
-const partitioner = Partitioners.DefaultPartitioner();
-
 async function fetchPartitionOffset(
   kafka: Kafka,
   partition: number,
-): Promise<string | null> {
+): Promise<number | null> {
   const admin = kafka.admin();
 
   await admin.connect();
@@ -16,12 +14,21 @@ async function fetchPartitionOffset(
 
   const offset = offsets.find((o) => o.partition === partition);
 
-  return offset?.offset ?? null;
+  if (offset?.high == null) {
+    return null;
+  }
+
+  const offsetNumber = parseInt(offset.high, 10);
+  if (isNaN(offsetNumber)) {
+    return null;
+  }
+
+  return offsetNumber;
 }
 
 /** 現在のドメインオブジェクトにドメインイベントを適用して、新しいドメインオブジェクトを返す関数 */
 export type ApplyFunction<DomainObject, DomainEvent> = (
-  domainObject: DomainObject,
+  domainObject: DomainObject | null,
   domainEvent: DomainEvent,
 ) => DomainObject;
 
@@ -29,7 +36,7 @@ export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
   kafka: Kafka;
   domainObjectId: DomainObjectId;
   /** 再構築の開始時点でのドメインオブジェクト */
-  initialDomainObject: DomainObject;
+  initialDomainObject: DomainObject | null;
   /** 現在のドメインオブジェクトにドメインイベントを適用して、新しいドメインオブジェクトを返す関数 */
   applyFunction: ApplyFunction<DomainObject, DomainEvent>;
 }
@@ -37,22 +44,36 @@ export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
 export async function rebuildDomainObject<DomainObject, DomainEvent>(
   args: RebuildDomainObjectArgs<DomainObject, DomainEvent>,
 ): Promise<DomainObject | null> {
+  console.log({ args });
   const { kafka, domainObjectId, initialDomainObject, applyFunction } = args;
 
+  const admin = kafka.admin();
+  await admin.connect();
+  const { topics } = await admin.fetchTopicMetadata();
+  const targetTopic = topics.find((topic) => topic.name === 'chat-events');
+  if (targetTopic == null) {
+    return null;
+  }
+
+  const partitioner = Partitioners.DefaultPartitioner();
   const targetPartition = partitioner({
     topic: 'chat-events',
     message: {
       key: domainObjectId,
       value: null, // partitionの決定にvalueは不要
     },
-    partitionMetadata: [], // partitionの決定にvalueは不要
+    partitionMetadata: targetTopic.partitions,
   });
 
+  console.log({ targetPartition });
+
   // このオフセットまでのイベントに基づいてドメインオブジェクトを再構築する
-  const offset = await fetchPartitionOffset(kafka, targetPartition);
+  const offsetNumber = await fetchPartitionOffset(kafka, targetPartition);
+
+  console.log({ offsetNumber });
 
   // offsetが存在しない => そのドメインオブジェクトに対するイベントは1件も存在しない
-  if (offset == null) {
+  if (offsetNumber == null) {
     return null;
   }
 
@@ -84,7 +105,11 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
         events.push(event);
 
         // オフセットが目標のオフセットを超えたら終了
-        if (message.offset >= offset) {
+        const messageOffsetNumber = parseInt(message.offset, 10);
+        if (isNaN(messageOffsetNumber)) {
+          return;
+        }
+        if (messageOffsetNumber + 1 >= offsetNumber) {
           resolve(events);
           return;
         }
@@ -93,6 +118,8 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
   });
 
   await consumer.disconnect();
+
+  console.log({ events });
 
   if (events.length === 0) {
     return null;
@@ -103,6 +130,8 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
     (domainObject, domainEvent) => applyFunction(domainObject, domainEvent),
     initialDomainObject,
   );
+
+  console.log({ domainObject });
 
   return domainObject;
 }

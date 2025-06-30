@@ -1,4 +1,8 @@
 import { err, ok, Result } from 'neverthrow';
+import {
+  DomainObjectId,
+  newDomainObjectId,
+} from '../../../core/domainObjectId';
 
 export interface ChatRoomMember {
   id: string;
@@ -8,6 +12,8 @@ export interface ChatRoomMember {
 export interface ChatRoom {
   id: string;
   version: number;
+  name: string;
+  createdAt: number;
   members: ChatRoomMember[];
   messages: ChatMessage[];
   internal: {
@@ -22,10 +28,18 @@ export interface ChatMessage {
   content: string;
 }
 
-export function newChatRoom(id: string): ChatRoom {
+export function newChatRoomId(
+  uniqueIdGenerator?: () => string,
+): DomainObjectId {
+  return newDomainObjectId('chat-room', uniqueIdGenerator);
+}
+
+export function emptyChatRoom(id: string): ChatRoom {
   return {
     id,
     version: 0,
+    createdAt: 0,
+    name: '',
     members: [],
     messages: [],
     internal: {
@@ -67,4 +81,16 @@ export function canPostMessage({
   }
 
   return ok(chatRoom);
+}
+
+interface CanCreateChatRoomArgs {
+  chatRoomName: string;
+  chatRoomMembers: ChatRoomMember[];
+  operatorUserId: string;
+}
+
+export function canCreateChatRoom({}) {
+  // すべてのメンバーが存在すること
+  // TODO: メンバーのドメインオブジェクトが存在しないので作る
+  // if()
 }

@@ -9,7 +9,8 @@ esbuild.build({
   outfile: path.join(__dirname, 'dist', 'main.js'),
   platform: 'node',
   bundle: true,
-  sourcemap: true,
+  external: ['kafkajs'],
+  sourcemap: 'inline',
   minify: true,
   format: 'esm',
 });
