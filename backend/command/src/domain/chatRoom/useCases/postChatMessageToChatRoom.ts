@@ -1,6 +1,6 @@
 import { err, ok, Result } from 'neverthrow';
 import { ChatRoom, postMessageToChatRoom } from '../models/chatRoom';
-import { ChatMessagePostedToChatRoomEvent } from '../events/chatMessagePostedToChatRoom';
+import { ChatMessagePostedToChatRoomEvent } from '../../../../../share/events/chatMessagePostedToChatRoom';
 import { generateChatMessageId } from '../models/ChatMessageId';
 import {
   createChatMessage,

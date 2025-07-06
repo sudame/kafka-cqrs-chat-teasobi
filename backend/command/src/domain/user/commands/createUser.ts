@@ -5,7 +5,7 @@ import { Message as KafkaMessage } from 'kafkajs';
 import {
   UserCreatedEvent,
   userCreatedEventToKafkaMessage,
-} from '../events/userCreated';
+} from '../../../../../share/events/userCreated';
 
 export const createUserCommandSchema = z.object({
   userName: z.string(),

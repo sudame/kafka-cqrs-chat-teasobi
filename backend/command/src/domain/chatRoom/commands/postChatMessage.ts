@@ -5,7 +5,7 @@ import { err, ok, Result } from 'neverthrow';
 import {
   ChatMessagePostedToChatRoomEvent,
   chatMessagePostedToChatRoomEventToKafkaMessage,
-} from '../events/chatMessagePostedToChatRoom';
+} from '../../../../../share/events/chatMessagePostedToChatRoom';
 import { SendMessageToKafka } from '../../user/commands/createUser';
 
 export const postMessageCommandSchema = z.object({

@@ -1,6 +1,7 @@
 import { err, ok, Result } from 'neverthrow';
 import { User } from '../models/user';
-import { applyUserCreatedEventToUser, UserCreatedEvent } from './userCreated';
+import { UserCreatedEvent } from '@share/events/userCreated';
+import { applyUserCreatedEventToUser } from './userCreated';
 
 export type UserEvent = UserCreatedEvent;
 

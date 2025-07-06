@@ -1,6 +1,6 @@
 import { Kafka } from 'kafkajs';
 import { rebuildDomainObject } from '../../tools/rebuildDomainObject';
-import { ChatRoomEvent, applyChatRoomEventToChatRoom } from './events';
+import { ChatRoomEvent, applyChatRoomEventToChatRoom } from './eventAppliers';
 import { ChatRoom } from './models/chatRoom';
 import { ChatRoomId } from './models/chatRoomId';
 

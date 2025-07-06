@@ -1,20 +1,8 @@
-import { err, ok, Result } from 'neverthrow';
-import { ChatRoom } from '../models/chatRoom';
+import { Result, err, ok } from 'neverthrow';
+import { ChatMessagePostedToChatRoomEvent } from '@share/events/chatMessagePostedToChatRoom';
 import { ChatMessage } from '../models/chatMessage';
 import { newChatMessageIdFromSafeValue } from '../models/ChatMessageId';
-
-export interface ChatMessagePostedToChatRoomEvent {
-  type: 'chat-message-posted-to-chat-room';
-  chatRoomId: string;
-  chatMessage: {
-    id: string;
-    postedAt: number;
-    authorUserId: string;
-    content: string;
-  };
-  createdAt: number;
-  toVersion: number;
-}
+import { ChatRoom } from '../models/chatRoom';
 
 export async function applyChatMessagePostedEventToChatRoom(
   chatRoom: ChatRoom | null,
@@ -51,13 +39,4 @@ export async function applyChatMessagePostedEventToChatRoom(
   };
 
   return ok(newChatRoom);
-}
-
-export function chatMessagePostedToChatRoomEventToKafkaMessage(
-  event: ChatMessagePostedToChatRoomEvent,
-): { key: string; value: string } {
-  return {
-    key: event.chatRoomId,
-    value: JSON.stringify(event),
-  };
 }

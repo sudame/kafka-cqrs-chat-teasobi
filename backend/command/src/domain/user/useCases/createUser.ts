@@ -2,7 +2,7 @@ import { err, ok, Result } from 'neverthrow';
 import { createUser, User } from '../models/user';
 import { generateUserId } from '../models/userId';
 import { CreateUserArgs as CreateDomainUserArgs } from '../models/user';
-import { UserCreatedEvent } from '../events/userCreated';
+import { UserCreatedEvent } from '../../../../../share/events/userCreated';
 
 export type CreateUserArgs = {
   userName: string;

@@ -6,7 +6,7 @@ import { newUserId } from '../../user/models/userId';
 import { rebuildUser } from '../../user/rebuildUser';
 import { Kafka } from 'kafkajs';
 import { generateChatRoomMemberId } from '../models/chatRoomMemberId';
-import { ChatRoomCreatedEvent } from '../events/chatRoomCreated';
+import { ChatRoomCreatedEvent } from '../../../../../share/events/chatRoomCreated';
 
 export type CreateChatRoomArgs = {
   chatRoomName: string;

@@ -6,7 +6,7 @@ import { SendMessageToKafka } from '../../user/commands/createUser';
 import {
   ChatRoomCreatedEvent,
   chatRoomCreatedEventToKafkaMessage,
-} from '../events/chatRoomCreated';
+} from '../../../../../share/events/chatRoomCreated';
 
 export const createChatRoomCommandSchema = z.object({
   chatRoomName: z.string(),

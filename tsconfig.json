@@ -5,6 +5,9 @@
     "moduleResolution": "bundler",
     "target": "esnext",
     "noEmit": true,
-    "checkJs": false
+    "checkJs": false,
+    "paths": {
+      "@share/*": ["./backend/share/*"]
+    }
   }
 }

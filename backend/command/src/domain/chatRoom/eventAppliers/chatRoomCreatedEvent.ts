@@ -1,36 +1,12 @@
-import { err, ok, Result } from 'neverthrow';
+import { ChatRoomCreatedEvent } from '@share/events/chatRoomCreated';
+import { Kafka } from 'kafkajs';
+import { Result, err, ok } from 'neverthrow';
+import { newUserIdFromSafeValue } from '../../user/models/userId';
+import { rebuildUser } from '../../user/rebuildUser';
 import { ChatRoom } from '../models/chatRoom';
 import { newChatRoomIdFromSafeValue } from '../models/chatRoomId';
-import { newChatRoomMemberIdFromSafeValue } from '../models/chatRoomMemberId';
-import { rebuildUser } from '../../user/rebuildUser';
-import { Kafka } from 'kafkajs';
-import { newUserIdFromSafeValue } from '../../user/models/userId';
 import { ChatRoomMember } from '../models/chatRoomMember';
-
-export type ChatRoomCreatedEvent = {
-  type: 'chat-room-created';
-  chatRoom: {
-    id: string;
-    name: string;
-    version: number;
-    createdAt: number;
-    members: {
-      id: string;
-      userId: string;
-    }[];
-  };
-  createdAt: number;
-  toVersion: number;
-};
-
-export function chatRoomCreatedEventToKafkaMessage(
-  event: ChatRoomCreatedEvent,
-): { key: string; value: string } {
-  return {
-    key: event.chatRoom.id,
-    value: JSON.stringify(event),
-  };
-}
+import { newChatRoomMemberIdFromSafeValue } from '../models/chatRoomMemberId';
 
 async function rebuildChatRoomMember(
   memberFromEvent: {

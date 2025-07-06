@@ -1,6 +1,6 @@
 import { Kafka } from 'kafkajs';
 import { rebuildDomainObject } from '../../tools/rebuildDomainObject';
-import { UserEvent, applyUserEventToUser } from './events';
+import { UserEvent, applyUserEventToUser } from './eventAppliers';
 import { UserId } from './models/userId';
 import { User } from './models/user';
 

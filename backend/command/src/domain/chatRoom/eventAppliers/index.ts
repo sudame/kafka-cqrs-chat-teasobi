@@ -1,14 +1,10 @@
 import { Result } from 'neverthrow';
 import { ChatRoom } from '../models/chatRoom';
-import {
-  applyCreateChatRoomEventToChatRoom,
-  ChatRoomCreatedEvent,
-} from './chatRoomCreated';
+import { ChatRoomCreatedEvent } from '../../../../../share/events/chatRoomCreated';
 import { Kafka } from 'kafkajs';
-import {
-  applyChatMessagePostedEventToChatRoom,
-  ChatMessagePostedToChatRoomEvent,
-} from './chatMessagePostedToChatRoom';
+import { ChatMessagePostedToChatRoomEvent } from '../../../../../share/events/chatMessagePostedToChatRoom';
+import { applyChatMessagePostedEventToChatRoom } from './chatMessagePosteedEvent';
+import { applyCreateChatRoomEventToChatRoom } from './chatRoomCreatedEvent';
 
 export type ChatRoomEvent =
   | ChatMessagePostedToChatRoomEvent
