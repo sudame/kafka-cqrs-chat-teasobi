@@ -1,4 +1,6 @@
-export type UserCreatedEvent = {
+import { EventContract } from '@share/eventContract';
+
+export type UserCreatedEvent = EventContract<{
   type: 'user-created';
   user: {
     name: string;
@@ -8,7 +10,7 @@ export type UserCreatedEvent = {
   };
   createdAt: number;
   toVersion: number;
-};
+}>;
 
 export function userCreatedEventToKafkaMessage(event: UserCreatedEvent): {
   key: string;

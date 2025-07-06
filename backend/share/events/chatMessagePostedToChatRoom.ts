@@ -1,6 +1,7 @@
+import { EventContract } from '@share/eventContract';
 import { err, ok, Result } from 'neverthrow';
 
-export interface ChatMessagePostedToChatRoomEvent {
+export type ChatMessagePostedToChatRoomEvent = EventContract<{
   type: 'chat-message-posted-to-chat-room';
   chatRoomId: string;
   chatMessage: {
@@ -11,7 +12,7 @@ export interface ChatMessagePostedToChatRoomEvent {
   };
   createdAt: number;
   toVersion: number;
-}
+}>;
 
 export function chatMessagePostedToChatRoomEventToKafkaMessage(
   event: ChatMessagePostedToChatRoomEvent,

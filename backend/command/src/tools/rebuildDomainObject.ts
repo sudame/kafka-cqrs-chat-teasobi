@@ -1,3 +1,5 @@
+import { ChatEvent } from '@share/events';
+import { kafkaMessageToEvent } from '@share/kafkaMessaageToEvent';
 import { Kafka, Partitioners } from 'kafkajs';
 import { err, ok, Result } from 'neverthrow';
 import { ulid } from 'ulid';
@@ -33,7 +35,10 @@ export type ApplyFunction<DomainObject, DomainEvent> = (
   deps: { kafka: Kafka },
 ) => Promise<Result<DomainObject, Error>>;
 
-export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
+export interface RebuildDomainObjectArgs<
+  DomainObject,
+  DomainEvent extends ChatEvent,
+> {
   kafka: Kafka;
   domainObjectId: string;
   /** 再構築の開始時点でのドメインオブジェクト */
@@ -42,7 +47,10 @@ export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
   applyFunction: ApplyFunction<DomainObject, DomainEvent>;
 }
 
-export async function rebuildDomainObject<DomainObject, DomainEvent>(
+export async function rebuildDomainObject<
+  DomainObject,
+  DomainEvent extends ChatEvent,
+>(
   args: RebuildDomainObjectArgs<DomainObject, DomainEvent>,
 ): Promise<Result<DomainObject, Error>> {
   const { kafka, domainObjectId, initialDomainObject, applyFunction } = args;
@@ -79,39 +87,52 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
   await consumer.connect();
   await consumer.subscribe({ topic: 'chat-events', fromBeginning: true });
 
-  const events = await new Promise<DomainEvent[]>((resolve) => {
-    const events: DomainEvent[] = [];
+  const loadEvents = () =>
+    new Promise<DomainEvent[]>((resolve, reject) => {
+      const events: DomainEvent[] = [];
 
-    consumer.run({
-      eachMessage: async ({ message, partition }) => {
-        // 不正なイベントは無視
-        if (message.key == null || message.value == null) {
-          return;
-        }
+      consumer.run({
+        eachMessage: async ({ message, partition }) => {
+          // 不正なイベントは無視
+          if (message.key == null || message.value == null) {
+            return;
+          }
 
-        // 再構築するドメインオブジェクトと無関係なイベントは無視
-        if (
-          partition !== targetPartition ||
-          message.key.toString() !== domainObjectId
-        ) {
-          return;
-        }
+          // 再構築するドメインオブジェクトと無関係なイベントは無視
+          if (
+            partition !== targetPartition ||
+            message.key.toString() !== domainObjectId
+          ) {
+            return;
+          }
 
-        const event: DomainEvent = JSON.parse(message.value.toString());
-        events.push(event);
+          const kafkaMessageToEventResult = kafkaMessageToEvent(message);
+          if (kafkaMessageToEventResult.isErr()) {
+            return reject(kafkaMessageToEventResult.error);
+          }
+          const event = kafkaMessageToEventResult.value as DomainEvent;
+          events.push(event);
 
-        // オフセットが目標のオフセットを超えたら終了
-        const messageOffsetNumber = parseInt(message.offset, 10);
-        if (isNaN(messageOffsetNumber)) {
-          return;
-        }
-        if (messageOffsetNumber + 1 >= offsetNumber) {
-          resolve(events);
-          return;
-        }
-      },
+          // オフセットが目標のオフセットを超えたら終了
+          const messageOffsetNumber = parseInt(message.offset, 10);
+          if (isNaN(messageOffsetNumber)) {
+            return;
+          }
+          if (messageOffsetNumber + 1 >= offsetNumber) {
+            return resolve(events);
+          }
+        },
+      });
     });
-  });
+
+  let events: DomainEvent[] = [];
+  try {
+    events = await loadEvents();
+  } catch (error) {
+    await consumer.disconnect();
+    if (error instanceof Error) return err(error);
+    return err(new Error('Unknown error occurred while loading events.'));
+  }
 
   await consumer.disconnect();
 
