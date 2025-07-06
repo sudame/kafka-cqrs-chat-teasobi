@@ -1,23 +1,20 @@
+import { err, ok, Result } from 'neverthrow';
 import { AggregateDomainObject } from '../../../core/aggregateDomainObject';
-import { newDomainObjectId } from '../../../core/domainObjectId';
+import { UserId } from './userId';
 
-export interface User extends AggregateDomainObject {
-  createdAt: number;
+export type User = {
+  createdAt: Date;
   name: string;
-}
+} & AggregateDomainObject<UserId>;
 
-export function newUserId(uniqueIdGenerator?: () => string): string {
-  return newDomainObjectId('user', uniqueIdGenerator);
-}
+export type CreateUserArgs = User;
 
-export function createEmptyUser(id: string): User {
-  return {
-    id,
-    version: 0,
-    createdAt: 0,
-    name: '',
-    internal: {
-      kafkaLatestOffset: null,
-    },
-  };
+export function createUser(args: CreateUserArgs): Result<User, Error> {
+  // ユーザー名は空であってはならない
+  if (args.name === '') {
+    return err(new Error('User name cannot be empty.'));
+  }
+
+  const user: User = { ...args };
+  return ok(user);
 }

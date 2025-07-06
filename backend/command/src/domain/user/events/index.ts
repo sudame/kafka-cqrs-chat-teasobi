@@ -1,23 +1,33 @@
+import { err, ok, Result } from 'neverthrow';
 import { User } from '../models/user';
-import { applyCreateUserEventToUser, CreateUserEvent } from './createUser';
+import { applyUserCreatedEventToUser, UserCreatedEvent } from './userCreated';
 
-export type UserEvent = CreateUserEvent;
+export type UserEvent = UserCreatedEvent;
+
+export type UserApplyFunction = (
+  user: User | null,
+  event: UserEvent,
+) => Result<User, Error>;
+
+const eventTypeToApplyFunctionMap: Record<
+  UserEvent['type'],
+  UserApplyFunction
+> = {
+  'user-created': applyUserCreatedEventToUser,
+};
 
 export function applyUserEventToUser(
   user: User | null,
   event: UserEvent,
-): User {
+): Result<User, Error> {
   let newUser: User;
 
-  switch (event.type) {
-    case 'CreateUser': {
-      newUser = applyCreateUserEventToUser(user, event);
-      break;
-    }
-    default: {
-      throw new Error(`Unknown event type: ${event}`);
-    }
+  const applyFunction = eventTypeToApplyFunctionMap[event.type];
+  const result = applyFunction(user, event);
+  if (result.isErr()) {
+    return err(result.error);
   }
+  newUser = result.value;
 
-  return newUser;
+  return ok(newUser);
 }

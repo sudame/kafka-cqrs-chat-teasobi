@@ -1,7 +1,9 @@
-export interface AggregateDomainObject {
-  id: string;
+export interface AggregateDomainObject<IdType> {
+  id: IdType;
   version: number;
-  internal: {
-    kafkaLatestOffset: string | null;
-  };
+
+  // スナップショットを実装したら必要になる可能性が高い
+  // internal: {
+  //   kafkaLatestOffset: string | null;
+  // };
 }

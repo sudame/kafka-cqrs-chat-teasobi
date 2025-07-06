@@ -4,10 +4,11 @@ import { validator } from 'hono/validator';
 import { serve } from '@hono/node-server';
 import { postMessageCommandSchema } from './domain/chatRoom/commands/postChatMessage';
 import { handlePostMessageCommand } from './domain/chatRoom/commandHandlers/postChatMessage';
-import { createUserCommandSchema } from './domain/user/commands/createUser';
-import { handleCreateUserCommand } from './domain/user/commandHandlers/createUser';
+import { handleCreateUserCommand } from './domain/user/commands/createUser';
 import { createChatRoomCommandSchema } from './domain/chatRoom/commands/createChatRoom';
 import { handleCreateChatRoomCommand } from './domain/chatRoom/commandHandlers/createChatRoom';
+import { createCreateUser } from './domain/user/useCases/createUser';
+import { ok } from 'neverthrow';
 
 const app = new Hono();
 
@@ -78,24 +79,19 @@ app
   )
   .post(
     '/create-user',
-    validator('json', async (value, c) => {
-      const parsedCommand = createUserCommandSchema.safeParse(value);
-      if (!parsedCommand.success) {
-        return c.text(parsedCommand.error.message, 400);
+    validator('json', async (command, c) => {
+      const createUser = createCreateUser();
+      const result = await handleCreateUserCommand(
+        command,
+        createUser,
+        // TODO: 実装する
+        async (_) => ok(),
+      );
+      if (result.isErr()) {
+        return c.json(result.error, 400);
       }
-
-      const command = parsedCommand.data;
-      try {
-        await handleCreateUserCommand(command, { kafka });
-      } catch (error) {
-        console.error(error);
-        if (error instanceof Error) {
-          return c.json(error, 500);
-        }
-        return c.text(`Internal server error: ${error}`, 500);
-      }
-
-      return c.json({ status: 'success' });
+      const event = result.value;
+      return c.json(event, 200);
     }),
   );
 
