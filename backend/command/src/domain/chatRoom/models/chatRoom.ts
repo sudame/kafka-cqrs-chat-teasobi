@@ -41,18 +41,14 @@ export function createChatRoom(
   return ok(chatRoom);
 }
 
-type PostMessageArgs = {
-  message: ChatMessage;
-};
-
-export function postMessage(
+export function postMessageToChatRoom(
   chatRoom: ChatRoom,
-  args: PostMessageArgs,
+  message: ChatMessage,
 ): Result<ChatRoom, Error> {
   // メッセージの投稿者はチャットルームのメンバーでなければならない
   if (
     !chatRoom.members.some(
-      (member) => member.user.id.value === args.message.authorUser.id.value,
+      (member) => member.user.id.value === message.authorUser.id.value,
     )
   ) {
     return err(new Error('Message author must be a member of the chat room.'));
@@ -61,7 +57,7 @@ export function postMessage(
   const updatedChatRoom: ChatRoom = {
     ...chatRoom,
     version: chatRoom.version + 1,
-    messages: [...chatRoom.messages, { ...args.message }],
+    messages: [...chatRoom.messages, { ...message }],
   };
 
   return ok(updatedChatRoom);

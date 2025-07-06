@@ -4,10 +4,15 @@ import {
   applyCreateChatRoomEventToChatRoom,
   ChatRoomCreatedEvent,
 } from './chatRoomCreated';
-import { PostChatMessageEvent } from './postChatMessage';
 import { Kafka } from 'kafkajs';
+import {
+  applyChatMessagePostedEventToChatRoom,
+  ChatMessagePostedToChatRoomEvent,
+} from './chatMessagePostedToChatRoom';
 
-export type ChatRoomEvent = PostChatMessageEvent | ChatRoomCreatedEvent;
+export type ChatRoomEvent =
+  | ChatMessagePostedToChatRoomEvent
+  | ChatRoomCreatedEvent;
 
 export async function applyChatRoomEventToChatRoom(
   chatRoom: ChatRoom | null,
@@ -17,6 +22,9 @@ export async function applyChatRoomEventToChatRoom(
   switch (event.type) {
     case 'chat-room-created': {
       return applyCreateChatRoomEventToChatRoom(chatRoom, event, deps);
+    }
+    case 'chat-message-posted-to-chat-room': {
+      return applyChatMessagePostedEventToChatRoom(chatRoom, event);
     }
     default:
       throw new Error(`Unknown event type: ${event}`);

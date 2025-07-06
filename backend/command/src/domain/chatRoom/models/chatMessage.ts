@@ -1,9 +1,9 @@
 import { err, ok, Result } from 'neverthrow';
 import { User } from '../../user/models/user';
-import { ChatRoomMessageId } from './ChatRoomMessageId';
+import { ChatMessageId } from './ChatMessageId';
 
 export interface ChatMessage {
-  id: ChatRoomMessageId;
+  id: ChatMessageId;
   postedAt: Date;
   authorUser: User;
   content: string;

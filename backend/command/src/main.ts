@@ -2,14 +2,12 @@ import { Kafka } from 'kafkajs';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { serve } from '@hono/node-server';
-import { postMessageCommandSchema } from './domain/chatRoom/commands/postChatMessage';
-import { handlePostMessageCommand } from './domain/chatRoom/commandHandlers/postChatMessage';
+import { handlePostMessageCommand } from './domain/chatRoom/commands/postChatMessage';
 import { handleCreateUserCommand } from './domain/user/commands/createUser';
 import { handleCreateChatRoomCommand } from './domain/chatRoom/commands/createChatRoom';
 import { createCreateUser } from './domain/user/useCases/createUser';
-import { err, ok, Result } from 'neverthrow';
-import { Message as KafkaMessage } from 'kafkajs';
 import { createSendMessageToKafka } from './tools/createSendMessageToKafka';
+import { createPostChatMessageToChatRoom } from './domain/chatRoom/useCases/postChatMessageToChatRoom';
 
 const app = new Hono();
 
@@ -55,23 +53,21 @@ app
   )
   .post(
     '/post-message',
-    validator('json', async (value, c) => {
-      const parsedCommand = postMessageCommandSchema.safeParse(value);
-      if (!parsedCommand.success) {
-        return c.text(parsedCommand.error.message, 400);
+    validator('json', async (command, c) => {
+      const postChatMessageToChatRoom = createPostChatMessageToChatRoom();
+      const result = await handlePostMessageCommand(
+        command,
+        postChatMessageToChatRoom,
+        sendMessageToKafka,
+        {
+          kafka,
+        },
+      );
+      if (result.isErr()) {
+        return c.json(result.error, 400);
       }
-
-      const command = parsedCommand.data;
-      try {
-        await handlePostMessageCommand(command, { kafka });
-      } catch (error) {
-        console.error(error);
-        if (error instanceof Error) {
-          return c.json(error, 500);
-        }
-        return c.text(`Internal server error: ${error}`, 500);
-      }
-      return c.json({ status: 'success' });
+      const event = result.value;
+      return c.json(event, 200);
     }),
   )
   .post(
