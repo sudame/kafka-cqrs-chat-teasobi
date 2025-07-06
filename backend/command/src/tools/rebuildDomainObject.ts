@@ -1,6 +1,6 @@
 import { Kafka, Partitioners } from 'kafkajs';
+import { err, ok, Result } from 'neverthrow';
 import { ulid } from 'ulid';
-import { DomainObjectId } from '../core/domainObjectId';
 
 async function fetchPartitionOffset(
   kafka: Kafka,
@@ -30,11 +30,12 @@ async function fetchPartitionOffset(
 export type ApplyFunction<DomainObject, DomainEvent> = (
   domainObject: DomainObject | null,
   domainEvent: DomainEvent,
-) => DomainObject;
+  deps: { kafka: Kafka },
+) => Promise<Result<DomainObject, Error>>;
 
 export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
   kafka: Kafka;
-  domainObjectId: DomainObjectId;
+  domainObjectId: string;
   /** 再構築の開始時点でのドメインオブジェクト */
   initialDomainObject: DomainObject | null;
   /** 現在のドメインオブジェクトにドメインイベントを適用して、新しいドメインオブジェクトを返す関数 */
@@ -43,8 +44,7 @@ export interface RebuildDomainObjectArgs<DomainObject, DomainEvent> {
 
 export async function rebuildDomainObject<DomainObject, DomainEvent>(
   args: RebuildDomainObjectArgs<DomainObject, DomainEvent>,
-): Promise<DomainObject | null> {
-  console.log({ args });
+): Promise<Result<DomainObject, Error>> {
   const { kafka, domainObjectId, initialDomainObject, applyFunction } = args;
 
   const admin = kafka.admin();
@@ -52,7 +52,7 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
   const { topics } = await admin.fetchTopicMetadata();
   const targetTopic = topics.find((topic) => topic.name === 'chat-events');
   if (targetTopic == null) {
-    return null;
+    return err(new Error('Target topic "chat-events" not found.'));
   }
 
   const partitioner = Partitioners.DefaultPartitioner();
@@ -65,16 +65,12 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
     partitionMetadata: targetTopic.partitions,
   });
 
-  console.log({ targetPartition });
-
   // このオフセットまでのイベントに基づいてドメインオブジェクトを再構築する
   const offsetNumber = await fetchPartitionOffset(kafka, targetPartition);
 
-  console.log({ offsetNumber });
-
   // offsetが存在しない => そのドメインオブジェクトに対するイベントは1件も存在しない
   if (offsetNumber == null) {
-    return null;
+    return err(new Error('No events found for the specified domain object.'));
   }
 
   const consumer = kafka.consumer({
@@ -119,19 +115,22 @@ export async function rebuildDomainObject<DomainObject, DomainEvent>(
 
   await consumer.disconnect();
 
-  console.log({ events });
-
   if (events.length === 0) {
-    return null;
+    return err(new Error('No events found for the specified domain object.'));
   }
 
-  // イベントを適用してドメインオブジェクトを再構築
-  const domainObject = events.reduce(
-    (domainObject, domainEvent) => applyFunction(domainObject, domainEvent),
-    initialDomainObject,
-  );
+  let domainObject: DomainObject | null = initialDomainObject;
+  for (const event of events) {
+    const result = await applyFunction(domainObject, event, { kafka });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    domainObject = result.value;
+  }
 
-  console.log({ domainObject });
+  if (domainObject == null) {
+    return err(new Error('Domain object is null after applying events.'));
+  }
 
-  return domainObject;
+  return ok(domainObject);
 }

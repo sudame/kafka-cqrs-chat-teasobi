@@ -5,10 +5,11 @@ import { serve } from '@hono/node-server';
 import { postMessageCommandSchema } from './domain/chatRoom/commands/postChatMessage';
 import { handlePostMessageCommand } from './domain/chatRoom/commandHandlers/postChatMessage';
 import { handleCreateUserCommand } from './domain/user/commands/createUser';
-import { createChatRoomCommandSchema } from './domain/chatRoom/commands/createChatRoom';
-import { handleCreateChatRoomCommand } from './domain/chatRoom/commandHandlers/createChatRoom';
+import { handleCreateChatRoomCommand } from './domain/chatRoom/commands/createChatRoom';
 import { createCreateUser } from './domain/user/useCases/createUser';
-import { ok } from 'neverthrow';
+import { err, ok, Result } from 'neverthrow';
+import { Message as KafkaMessage } from 'kafkajs';
+import { createSendMessageToKafka } from './tools/createSendMessageToKafka';
 
 const app = new Hono();
 
@@ -34,26 +35,22 @@ if (topics.find((topic) => topic.name === 'chat-events') == null) {
 }
 admin.disconnect();
 
+const sendMessageToKafka = createSendMessageToKafka(kafka);
+
 app
   .post(
     '/create-chat-room',
     validator('json', async (value, c) => {
-      const parsedCommand = createChatRoomCommandSchema.safeParse(value);
-      if (!parsedCommand.success) {
-        return c.text(parsedCommand.error.message, 400);
+      const result = await handleCreateChatRoomCommand(
+        value,
+        sendMessageToKafka,
+        { kafka },
+      );
+      if (result.isErr()) {
+        return c.json(result.error, 400);
       }
-
-      const command = parsedCommand.data;
-      try {
-        await handleCreateChatRoomCommand(command, { kafka });
-      } catch (error) {
-        console.error(error);
-        if (error instanceof Error) {
-          return c.json(error, 500);
-        }
-        return c.text(`Internal server error: ${error}`, 500);
-      }
-      return c.json({ status: 'success' });
+      const event = result.value;
+      return c.json(event, 200);
     }),
   )
   .post(
@@ -84,8 +81,7 @@ app
       const result = await handleCreateUserCommand(
         command,
         createUser,
-        // TODO: 実装する
-        async (_) => ok(),
+        sendMessageToKafka,
       );
       if (result.isErr()) {
         return c.json(result.error, 400);

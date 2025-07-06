@@ -1,25 +1,22 @@
+import { Result } from 'neverthrow';
 import { ChatRoom } from '../models/chatRoom';
 import {
   applyCreateChatRoomEventToChatRoom,
-  CreateChatRoomEvent,
-} from './createChatRoom';
-import {
-  applyPostMessageEventToChatRoom,
-  PostChatMessageEvent,
-} from './postChatMessage';
+  ChatRoomCreatedEvent,
+} from './chatRoomCreated';
+import { PostChatMessageEvent } from './postChatMessage';
+import { Kafka } from 'kafkajs';
 
-export type ChatRoomEvent = PostChatMessageEvent | CreateChatRoomEvent;
+export type ChatRoomEvent = PostChatMessageEvent | ChatRoomCreatedEvent;
 
-export function applyChatRoomEventToChatRoom(
+export async function applyChatRoomEventToChatRoom(
   chatRoom: ChatRoom | null,
   event: ChatRoomEvent,
-): ChatRoom {
+  deps: { kafka: Kafka },
+): Promise<Result<ChatRoom, Error>> {
   switch (event.type) {
-    case 'CreateChatRoom': {
-      return applyCreateChatRoomEventToChatRoom(chatRoom, event);
-    }
-    case 'PostMessage': {
-      return applyPostMessageEventToChatRoom(chatRoom, event);
+    case 'chat-room-created': {
+      return applyCreateChatRoomEventToChatRoom(chatRoom, event, deps);
     }
     default:
       throw new Error(`Unknown event type: ${event}`);

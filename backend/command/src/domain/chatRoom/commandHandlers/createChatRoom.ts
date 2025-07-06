@@ -2,7 +2,7 @@ import { ulid } from 'ulid';
 import { newChatRoomId } from '../models/chatRoom';
 import { Kafka } from 'kafkajs';
 import { CreateChatRoomCommand } from '../commands/createChatRoom';
-import { CreateChatRoomEvent } from '../events/createChatRoom';
+import { CreateChatRoomEvent } from '../events/chatRoomCreated';
 
 export async function handleCreateChatRoomCommand(
   command: CreateChatRoomCommand,

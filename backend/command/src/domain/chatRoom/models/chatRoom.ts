@@ -1,96 +1,68 @@
 import { err, ok, Result } from 'neverthrow';
-import {
-  DomainObjectId,
-  newDomainObjectId,
-} from '../../../core/domainObjectId';
+import { ChatRoomId } from './chatRoomId';
+import { ChatRoomMember } from './chatRoomMember';
+import { ChatMessage } from './chatMessage';
+import { AggregateDomainObject } from '../../../core/aggregateDomainObject';
 
-export interface ChatRoomMember {
-  id: string;
-  userId: string;
-}
-
-export interface ChatRoom {
-  id: string;
+export type ChatRoom = {
+  id: ChatRoomId;
   version: number;
   name: string;
-  createdAt: number;
+  createdAt: Date;
   members: ChatRoomMember[];
   messages: ChatMessage[];
-  internal: {
-    kafkaLatestOffset: string | null;
+} & AggregateDomainObject<ChatRoomId>;
+
+export type CreateChatRoomArgs = ChatRoom;
+
+export function createChatRoom(
+  args: CreateChatRoomArgs,
+): Result<ChatRoom, Error> {
+  // チャットルーム名は空であってはならない
+  if (args.name === '') {
+    return err(new Error('Chat room name cannot be empty.'));
+  }
+
+  // チャットルームのメンバーは空であってはならない
+  if (args.members.length === 0) {
+    return err(new Error('Chat room must have at least one member.'));
+  }
+
+  // チャットルームのメンバーはユニークでなければならない
+  const memberIds = new Set(args.members.map((member) => member.id.value));
+  if (memberIds.size !== args.members.length) {
+    return err(new Error('Chat room members must be unique.'));
+  }
+
+  const chatRoom: ChatRoom = {
+    ...args,
   };
-}
-
-export interface ChatMessage {
-  id: string;
-  postedAt: number;
-  authorUserId: string;
-  content: string;
-}
-
-export function newChatRoomId(
-  uniqueIdGenerator?: () => string,
-): DomainObjectId {
-  return newDomainObjectId('chat-room', uniqueIdGenerator);
-}
-
-export function emptyChatRoom(id: string): ChatRoom {
-  return {
-    id,
-    version: 0,
-    createdAt: 0,
-    name: '',
-    members: [],
-    messages: [],
-    internal: {
-      kafkaLatestOffset: null,
-    },
-  };
-}
-
-export function kafkaKeyForChatRoom(chatRoomId: string): string {
-  return `chat-room-${chatRoomId}`;
-}
-
-interface CanPostMessageArgs {
-  chatRoom: ChatRoom | null;
-  operatorUserId: string;
-  messageContent: string;
-}
-
-export function canPostMessage({
-  chatRoom,
-  messageContent,
-  operatorUserId,
-}: CanPostMessageArgs): Result<ChatRoom, Error> {
-  // TODO: 各ルールをドメインルールに切り出し
-
-  // ルール1: チャットルームが存在すること
-  if (chatRoom == null) {
-    return err(new Error('Chat room not found.'));
-  }
-
-  // ルール2: チャットルームのメンバーであること
-  if (!chatRoom.members.some((member) => member.userId === operatorUserId)) {
-    return err(new Error('User is not a member of the chat room.'));
-  }
-
-  // ルール3: メッセージの内容が空でないこと
-  if (messageContent.trim() === '') {
-    return err(new Error('Message content cannot be empty.'));
-  }
 
   return ok(chatRoom);
 }
 
-interface CanCreateChatRoomArgs {
-  chatRoomName: string;
-  chatRoomMembers: ChatRoomMember[];
-  operatorUserId: string;
-}
+type PostMessageArgs = {
+  message: ChatMessage;
+};
 
-export function canCreateChatRoom({}) {
-  // すべてのメンバーが存在すること
-  // TODO: メンバーのドメインオブジェクトが存在しないので作る
-  // if()
+export function postMessage(
+  chatRoom: ChatRoom,
+  args: PostMessageArgs,
+): Result<ChatRoom, Error> {
+  // メッセージの投稿者はチャットルームのメンバーでなければならない
+  if (
+    !chatRoom.members.some(
+      (member) => member.user.id.value === args.message.authorUser.id.value,
+    )
+  ) {
+    return err(new Error('Message author must be a member of the chat room.'));
+  }
+
+  const updatedChatRoom: ChatRoom = {
+    ...chatRoom,
+    version: chatRoom.version + 1,
+    messages: [...chatRoom.messages, { ...args.message }],
+  };
+
+  return ok(updatedChatRoom);
 }

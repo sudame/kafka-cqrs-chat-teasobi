@@ -16,10 +16,10 @@ const eventTypeToApplyFunctionMap: Record<
   'user-created': applyUserCreatedEventToUser,
 };
 
-export function applyUserEventToUser(
+export async function applyUserEventToUser(
   user: User | null,
   event: UserEvent,
-): Result<User, Error> {
+): Promise<Result<User, Error>> {
   let newUser: User;
 
   const applyFunction = eventTypeToApplyFunctionMap[event.type];

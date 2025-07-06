@@ -1,7 +1,7 @@
 import z from 'zod/v4';
 import { CreateUser } from '../useCases/createUser';
 import { err, ok, Result } from 'neverthrow';
-import { Message as KafkaMessage } from 'kafkajs';
+import { Kafka, Message as KafkaMessage } from 'kafkajs';
 import {
   UserCreatedEvent,
   userCreatedEventToKafkaMessage,
