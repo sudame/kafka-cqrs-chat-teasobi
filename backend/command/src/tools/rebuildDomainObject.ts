@@ -106,36 +106,34 @@ export async function rebuildDomainObject<
             messageKey: message.key?.toString(),
           });
 
-          // ターゲットパーティション以外は無視
-          if (partition !== targetPartition) {
-            return;
+          if (
+            // ターゲットパーティションである
+            partition === targetPartition &&
+            // イベントが正常である
+            message.key != null &&
+            message.value != null &&
+            // ドメインオブジェクトIDと一致する
+            message.key.toString() === domainObjectId
+          ) {
+            const kafkaMessageToEventResult = kafkaMessageToEvent(message);
+            if (kafkaMessageToEventResult.isErr()) {
+              return reject(kafkaMessageToEventResult.error);
+            }
+            const event = kafkaMessageToEventResult.value as DomainEvent;
+            events.push(event);
           }
 
           // オフセットが目標のオフセットを超えたら終了
           const messageOffsetNumber = parseInt(message.offset, 10);
           if (isNaN(messageOffsetNumber)) {
-            return;
+            return reject(new Error('Invalid message offset number.'));
           }
-          if (messageOffsetNumber + 1 >= offsetNumber) {
+          if (
+            partition === targetPartition &&
+            messageOffsetNumber + 1 >= offsetNumber
+          ) {
             return resolve(events);
           }
-
-          // 不正なイベントは無視
-          if (message.key == null || message.value == null) {
-            return;
-          }
-
-          // ドメインオブジェクトIDと一致しないイベントは無視
-          if (message.key.toString() !== domainObjectId) {
-            return;
-          }
-
-          const kafkaMessageToEventResult = kafkaMessageToEvent(message);
-          if (kafkaMessageToEventResult.isErr()) {
-            return reject(kafkaMessageToEventResult.error);
-          }
-          const event = kafkaMessageToEventResult.value as DomainEvent;
-          events.push(event);
         },
       });
     });

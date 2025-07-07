@@ -1,4 +1,5 @@
 import { err, ok, Result } from 'neverthrow';
+import { ulid } from 'ulid';
 
 export type ChatMessageId = {
   value: string;
@@ -24,7 +25,7 @@ export function newChatMessageIdFromSafeValue(
 export function generateChatMessageId(
   uniqueIdGenerator?: () => string,
 ): Result<ChatMessageId, Error> {
-  const uniquePart = uniqueIdGenerator ? uniqueIdGenerator() : '';
+  const uniquePart = uniqueIdGenerator ? uniqueIdGenerator() : ulid();
   const id = `chat-message-${uniquePart}`;
   return newChatMessageId(id);
 }
