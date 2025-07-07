@@ -3,7 +3,7 @@ services:
   # データ保持層: 各ツールデフォルトのポートを使用
   ##########################################
   kafka:
-    image: apache/kafka:3.9.1
+    image: apache/kafka:4.0.0
     container_name: kafka
     ports:
       - '9092:9092'
