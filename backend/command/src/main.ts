@@ -1,6 +1,7 @@
 import { Kafka } from 'kafkajs';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
+import { HTTPException } from 'hono/http-exception';
 import { serve } from '@hono/node-server';
 import { handlePostMessageCommand } from './domain/chatRoom/commands/postChatMessage';
 import { handleCreateUserCommand } from './domain/user/commands/createUser';
@@ -45,7 +46,7 @@ app
         { kafka },
       );
       if (result.isErr()) {
-        return c.json(result.error, 400);
+        throw new HTTPException(400, result.error);
       }
       const event = result.value;
       return c.json(event, 200);
@@ -64,7 +65,7 @@ app
         },
       );
       if (result.isErr()) {
-        return c.json(result.error, 400);
+        throw new HTTPException(400, result.error);
       }
       const event = result.value;
       return c.json(event, 200);
@@ -80,7 +81,7 @@ app
         sendMessageToKafka,
       );
       if (result.isErr()) {
-        return c.json(result.error, 400);
+        throw new HTTPException(400, result.error);
       }
       const event = result.value;
       return c.json(event, 200);

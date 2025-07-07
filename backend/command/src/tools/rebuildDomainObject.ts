@@ -77,7 +77,7 @@ export async function rebuildDomainObject<
   const offsetNumber = await fetchPartitionOffset(kafka, targetPartition);
 
   // offsetが存在しない => そのドメインオブジェクトに対するイベントは1件も存在しない
-  if (offsetNumber == null) {
+  if (offsetNumber == null || offsetNumber <= 0) {
     return err(new Error('No events found for the specified domain object.'));
   }
 
@@ -87,31 +87,29 @@ export async function rebuildDomainObject<
   await consumer.connect();
   await consumer.subscribe({ topic: 'chat-events', fromBeginning: true });
 
+  console.log({
+    domainObjectId,
+    targetPartition,
+    offsetNumber,
+  });
+
   const loadEvents = () =>
     new Promise<DomainEvent[]>((resolve, reject) => {
       const events: DomainEvent[] = [];
 
       consumer.run({
         eachMessage: async ({ message, partition }) => {
-          // 不正なイベントは無視
-          if (message.key == null || message.value == null) {
+          console.log({
+            messageValue: message.value?.toString(),
+            messageOffset: message.offset,
+            messagePartition: partition,
+            messageKey: message.key?.toString(),
+          });
+
+          // ターゲットパーティション以外は無視
+          if (partition !== targetPartition) {
             return;
           }
-
-          // 再構築するドメインオブジェクトと無関係なイベントは無視
-          if (
-            partition !== targetPartition ||
-            message.key.toString() !== domainObjectId
-          ) {
-            return;
-          }
-
-          const kafkaMessageToEventResult = kafkaMessageToEvent(message);
-          if (kafkaMessageToEventResult.isErr()) {
-            return reject(kafkaMessageToEventResult.error);
-          }
-          const event = kafkaMessageToEventResult.value as DomainEvent;
-          events.push(event);
 
           // オフセットが目標のオフセットを超えたら終了
           const messageOffsetNumber = parseInt(message.offset, 10);
@@ -121,6 +119,23 @@ export async function rebuildDomainObject<
           if (messageOffsetNumber + 1 >= offsetNumber) {
             return resolve(events);
           }
+
+          // 不正なイベントは無視
+          if (message.key == null || message.value == null) {
+            return;
+          }
+
+          // ドメインオブジェクトIDと一致しないイベントは無視
+          if (message.key.toString() !== domainObjectId) {
+            return;
+          }
+
+          const kafkaMessageToEventResult = kafkaMessageToEvent(message);
+          if (kafkaMessageToEventResult.isErr()) {
+            return reject(kafkaMessageToEventResult.error);
+          }
+          const event = kafkaMessageToEventResult.value as DomainEvent;
+          events.push(event);
         },
       });
     });
