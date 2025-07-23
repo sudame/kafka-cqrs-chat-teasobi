@@ -32,7 +32,7 @@ services:
       retries: 15 # 15回リトライ (合計約150秒待つ)
 
   mysql:
-    image: mysql:9.3.0
+    image: mysql:9.4.0
     restart: always
     container_name: mysql
     ports:
