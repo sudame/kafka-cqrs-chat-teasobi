@@ -31,6 +31,98 @@ services:
       timeout: 5s # タイムアウトは5秒
       retries: 15 # 15回リトライ (合計約150秒待つ)
 
+  tidb-pd:
+    image: pingcap/pd:v8.5.2
+    ports:
+      - '2379:2379'
+    command:
+      - --name=pd
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://tidb-pd:2379
+      - --advertise-peer-urls=http://tidb-pd:2380
+      - --initial-cluster=pd=http://tidb-pd:2380
+      - --data-dir=/data/pd
+    volumes:
+      - pd-data:/data/pd
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:2379/health']
+      interval: 5s
+      timeout: 2s
+      retries: 20
+    restart: on-failure
+
+  tidb-tikv:
+    image: pingcap/tikv:v8.5.2
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tidb-tikv:20160
+      - --data-dir=/data/tikv
+      - --pd=http://tidb-pd:2379
+    ports:
+      - '20160:20160'
+    volumes:
+      - tikv-data:/data
+    depends_on:
+      tidb-pd:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'test -d /data/tikv']
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    restart: on-failure
+
+  tidb-tidb:
+    image: pingcap/tidb:v8.5.2
+    command:
+      - --store=tikv
+      - --path=tidb-pd:2379
+      - --advertise-address=tidb-tidb
+    ports:
+      - '4000:4000' # MySQL 互換ポート
+      - '10080:10080' # HTTP (ステータス/デバッグ)
+    depends_on:
+      tidb-pd:
+        condition: service_healthy
+      tidb-tikv:
+        condition: service_healthy
+    restart: on-failure
+
+  tidb-ticdc:
+    image: pingcap/ticdc:v8.5.2
+    command:
+      - /cdc
+      - server
+      - --addr=tidb-ticdc:8300
+      - --advertise-addr=tidb-ticdc:8300
+      - --pd=http://tidb-pd:2379
+    ports:
+      - '8300:8300' # Cdc API ポート
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://tidb-ticdc:8300/api/v2/health']
+      interval: 1s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      tidb-pd:
+        condition: service_healthy
+      tidb-tikv:
+        condition: service_healthy
+  tidb-ticdc-init:
+    image: pingcap/ticdc:v8.5.2
+    command:
+      - /cdc
+      - cli
+      - changefeed
+      - create
+      - --server=http://tidb-ticdc:8300
+      - --sink-uri=kafka://kafka:29092/ticdc?protocol=simple&enable-tidb-extension=false
+      - --changefeed-id=cfc1
+    depends_on:
+      tidb-ticdc:
+        condition: service_healthy
+
   mysql:
     image: mysql:9.3.0
     restart: always
@@ -113,3 +205,7 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: kafka
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+volumes:
+  pd-data:
+  tikv-data:
