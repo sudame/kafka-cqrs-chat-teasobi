@@ -53,6 +53,13 @@ export class ChatRoomMemberNotFoundError extends Error {
   }
 }
 
+export class ChatRoomMessageAuthorMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChatRoomMessageAuthorMismatchError';
+  }
+}
+
 interface CreateChatRoomParams {
   name: ChatRoomName;
   operatorUserId: UserId;
@@ -171,5 +178,32 @@ export function removeMemberFromChatRoom(
   return ok({
     ...chatRoom,
     members: updatedMembers,
+  });
+}
+
+export function postMessage(
+  chatRoom: ChatRoom,
+  message: ChatRoomMessage,
+  operatorUserId: UserId,
+): Result<ChatRoom, ChatRoomOperatorNotMemberError | ChatRoomMessageAuthorMismatchError> {
+  // Validate operator membership
+  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'post messages');
+  if (operatorValidation.isErr()) {
+    return err(operatorValidation.error);
+  }
+
+  // Check if operator is the message author
+  if (message.author.userId !== operatorUserId) {
+    return err(
+      new ChatRoomMessageAuthorMismatchError(
+        'Message author must match the operator',
+      ),
+    );
+  }
+
+  const updatedMessages = [...chatRoom.messages, message];
+  return ok({
+    ...chatRoom,
+    messages: updatedMessages,
   });
 }
