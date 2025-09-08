@@ -4,7 +4,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "tsx build.ts"
+    "build": "tsx build.ts",
+    "test": "vitest run"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.1",
-    "esbuild": "^0.25.9"
+    "esbuild": "^0.25.9",
+    "vitest": "^3.2.4"
   }
 }
