@@ -3,30 +3,23 @@ import { generateUserId } from '../../user/userId';
 import {
   ChatRoomMessageAuthorMismatchError,
   ChatRoomOperatorNotMemberError,
-  createChatRoom,
   postMessage,
 } from '../chatRoom';
-import { createChatRoomMember } from '../chatRoomMember';
-import { createChatRoomMessage } from '../chatRoomMessage';
-import { chatRoomMessageContentFromString } from '../chatRoomMessageContent';
-import { chatRoomNameFromString } from '../chatRoomName';
+import { aChatRoom, aChatRoomMember, aChatRoomMessage } from './testHelpers';
 
 describe('postMessage', () => {
   test('should add message to chat room when operator is author and member', () => {
-    const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(userId).build();
+    const chatRoom = aChatRoom()
+      .withOperatorUserId(userId)
+      .withMembers(member)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('Hello, world!');
-    const message = createChatRoomMessage({
-      author: member,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('Hello, world!')
+      .build();
 
     const result = postMessage(chatRoom, message, userId);
 
@@ -40,20 +33,18 @@ describe('postMessage', () => {
   });
 
   test('should not modify original chat room messages', () => {
-    const name = chatRoomNameFromString('Original Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const originalChatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(userId).build();
+    const originalChatRoom = aChatRoom()
+      .withName('Original Room')
+      .withOperatorUserId(userId)
+      .withMembers(member)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('Test message');
-    const message = createChatRoomMessage({
-      author: member,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('Test message')
+      .build();
 
     const result = postMessage(originalChatRoom, message, userId);
 
@@ -65,30 +56,27 @@ describe('postMessage', () => {
   });
 
   test('should add multiple messages sequentially', () => {
-    const name = chatRoomNameFromString('Multiple Messages Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    let chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(userId).build();
+    let chatRoom = aChatRoom()
+      .withName('Multiple Messages Room')
+      .withOperatorUserId(userId)
+      .withMembers(member)
+      .buildUnsafe();
 
-    const message1Content = chatRoomMessageContentFromString('First message');
-    const message1 = createChatRoomMessage({
-      author: member,
-      content: message1Content,
-    });
+    const message1 = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('First message')
+      .build();
 
     const result1 = postMessage(chatRoom, message1, userId);
     expect(result1.isOk()).toBe(true);
     chatRoom = result1._unsafeUnwrap();
 
-    const message2Content = chatRoomMessageContentFromString('Second message');
-    const message2 = createChatRoomMessage({
-      author: member,
-      content: message2Content,
-    });
+    const message2 = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('Second message')
+      .build();
 
     const result2 = postMessage(chatRoom, message2, userId);
     expect(result2.isOk()).toBe(true);
@@ -100,21 +88,19 @@ describe('postMessage', () => {
   });
 
   test('should return error when operator is not a member of chat room', () => {
-    const name = chatRoomNameFromString('No Operator Room')._unsafeUnwrap();
     const memberUserId = generateUserId();
     const operatorUserId = generateUserId(); // Different user, not a member
-    const member = createChatRoomMember({ userId: memberUserId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: memberUserId, // Create with memberUserId as operator
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(memberUserId).build();
+    const chatRoom = aChatRoom()
+      .withName('No Operator Room')
+      .withOperatorUserId(memberUserId) // Create with memberUserId as operator
+      .withMembers(member)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('Test message');
-    const message = createChatRoomMessage({
-      author: member,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('Test message')
+      .build();
 
     const result = postMessage(chatRoom, message, operatorUserId);
 
@@ -127,22 +113,20 @@ describe('postMessage', () => {
   });
 
   test('should return error when message author is not the operator', () => {
-    const name = chatRoomNameFromString('Author Mismatch Room')._unsafeUnwrap();
     const operatorUserId = generateUserId();
     const authorUserId = generateUserId();
-    const operatorMember = createChatRoomMember({ userId: operatorUserId });
-    const authorMember = createChatRoomMember({ userId: authorUserId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId,
-      initialMembers: new Set([operatorMember, authorMember]),
-    })._unsafeUnwrap();
+    const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
+    const authorMember = aChatRoomMember().withUserId(authorUserId).build();
+    const chatRoom = aChatRoom()
+      .withName('Author Mismatch Room')
+      .withOperatorUserId(operatorUserId)
+      .withMembers(operatorMember, authorMember)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('Test message');
-    const message = createChatRoomMessage({
-      author: authorMember, // Author is different from operator
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(authorMember) // Author is different from operator
+      .withContent('Test message')
+      .build();
 
     const result = postMessage(chatRoom, message, operatorUserId);
 
@@ -153,22 +137,20 @@ describe('postMessage', () => {
   });
 
   test('should allow member to post message when they are both member and author', () => {
-    const name = chatRoomNameFromString('Valid Member Room')._unsafeUnwrap();
     const memberUserId = generateUserId();
     const otherUserId = generateUserId();
-    const member = createChatRoomMember({ userId: memberUserId });
-    const otherMember = createChatRoomMember({ userId: otherUserId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: otherUserId, // Created by other user
-      initialMembers: new Set([member, otherMember]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(memberUserId).build();
+    const otherMember = aChatRoomMember().withUserId(otherUserId).build();
+    const chatRoom = aChatRoom()
+      .withName('Valid Member Room')
+      .withOperatorUserId(otherUserId) // Created by other user
+      .withMembers(member, otherMember)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('My message');
-    const message = createChatRoomMessage({
-      author: member,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('My message')
+      .build();
 
     // memberUserId posts their own message
     const result = postMessage(chatRoom, message, memberUserId);
@@ -177,26 +159,24 @@ describe('postMessage', () => {
     const updatedChatRoom = result._unsafeUnwrap();
     expect(updatedChatRoom.messages).toHaveLength(1);
     expect(updatedChatRoom.messages[0]?.author).toBe(member);
-    expect(updatedChatRoom.messages[0]?.content).toBe(messageContent);
+    expect(updatedChatRoom.messages[0]?.content.valueOf()).toBe('My message');
   });
 
   test('should preserve chat room properties when posting message', () => {
-    const name = chatRoomNameFromString('Preserve Properties Room')._unsafeUnwrap();
     const userId1 = generateUserId();
     const userId2 = generateUserId();
-    const member1 = createChatRoomMember({ userId: userId1 });
-    const member2 = createChatRoomMember({ userId: userId2 });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId1,
-      initialMembers: new Set([member1, member2]),
-    })._unsafeUnwrap();
+    const member1 = aChatRoomMember().withUserId(userId1).build();
+    const member2 = aChatRoomMember().withUserId(userId2).build();
+    const chatRoom = aChatRoom()
+      .withName('Preserve Properties Room')
+      .withOperatorUserId(userId1)
+      .withMembers(member1, member2)
+      .buildUnsafe();
 
-    const messageContent = chatRoomMessageContentFromString('Test message');
-    const message = createChatRoomMessage({
-      author: member1,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member1)
+      .withContent('Test message')
+      .build();
 
     const result = postMessage(chatRoom, message, userId1);
 
@@ -211,23 +191,21 @@ describe('postMessage', () => {
   });
 
   test('should handle empty initial messages array', () => {
-    const name = chatRoomNameFromString('Empty Messages Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(userId).build();
+    const chatRoom = aChatRoom()
+      .withName('Empty Messages Room')
+      .withOperatorUserId(userId)
+      .withMembers(member)
+      .buildUnsafe();
 
     // Verify initial state
     expect(chatRoom.messages).toHaveLength(0);
 
-    const messageContent = chatRoomMessageContentFromString('First message');
-    const message = createChatRoomMessage({
-      author: member,
-      content: messageContent,
-    });
+    const message = aChatRoomMessage()
+      .withAuthor(member)
+      .withContent('First message')
+      .build();
 
     const result = postMessage(chatRoom, message, userId);
 

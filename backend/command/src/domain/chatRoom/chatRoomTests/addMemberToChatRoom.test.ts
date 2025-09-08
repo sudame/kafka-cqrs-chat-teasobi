@@ -4,23 +4,19 @@ import {
   addMemberToChatRoom,
   ChatRoomMemberAlreadyExistsError,
   ChatRoomOperatorNotMemberError,
-  createChatRoom,
 } from '../chatRoom';
-import { createChatRoomMember } from '../chatRoomMember';
-import { chatRoomNameFromString } from '../chatRoomName';
+import { aChatRoom, aChatRoomMember } from './testHelpers';
 
 describe('addMemberToChatRoom', () => {
   test('should add a new member to chat room', () => {
-    const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const initialMember = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([initialMember]),
-    })._unsafeUnwrap();
+    const initialMember = aChatRoomMember().withUserId(userId).build();
+    const chatRoom = aChatRoom()
+      .withOperatorUserId(userId)
+      .withMembers(initialMember)
+      .buildUnsafe();
 
-    const newMember = createChatRoomMember({ userId: generateUserId() });
+    const newMember = aChatRoomMember().build();
     const result = addMemberToChatRoom(chatRoom, newMember, userId);
 
     expect(result.isOk()).toBe(true);
@@ -33,15 +29,14 @@ describe('addMemberToChatRoom', () => {
   });
 
   test('should not modify original chat room', () => {
-    const name = chatRoomNameFromString('Original Room')._unsafeUnwrap();
     const userId = generateUserId();
-    const existingMember = createChatRoomMember({ userId });
-    const originalChatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([existingMember]),
-    })._unsafeUnwrap();
-    const newMember = createChatRoomMember({ userId: generateUserId() });
+    const existingMember = aChatRoomMember().withUserId(userId).build();
+    const originalChatRoom = aChatRoom()
+      .withName('Original Room')
+      .withOperatorUserId(userId)
+      .withMembers(existingMember)
+      .buildUnsafe();
+    const newMember = aChatRoomMember().build();
 
     const result = addMemberToChatRoom(originalChatRoom, newMember, userId);
 
@@ -53,16 +48,13 @@ describe('addMemberToChatRoom', () => {
   });
 
   test('should return error when adding duplicate member', () => {
-    const name = chatRoomNameFromString(
-      'Duplicate Test Room',
-    )._unsafeUnwrap();
     const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const member = aChatRoomMember().withUserId(userId).build();
+    const chatRoom = aChatRoom()
+      .withName('Duplicate Test Room')
+      .withOperatorUserId(userId)
+      .withMembers(member)
+      .buildUnsafe();
 
     const result = addMemberToChatRoom(chatRoom, member, userId);
 
@@ -74,18 +66,16 @@ describe('addMemberToChatRoom', () => {
     );
   });
 
-
   test('should return error when operator is not a member of chat room', () => {
-    const name = chatRoomNameFromString('No Operator Room')._unsafeUnwrap();
     const memberUserId = generateUserId();
     const operatorUserId = generateUserId(); // Different user, not a member
-    const existingMember = createChatRoomMember({ userId: memberUserId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: memberUserId, // Create with memberUserId as operator
-      initialMembers: new Set([existingMember]),
-    })._unsafeUnwrap();
-    const newMember = createChatRoomMember({ userId: generateUserId() });
+    const existingMember = aChatRoomMember().withUserId(memberUserId).build();
+    const chatRoom = aChatRoom()
+      .withName('No Operator Room')
+      .withOperatorUserId(memberUserId) // Create with memberUserId as operator
+      .withMembers(existingMember)
+      .buildUnsafe();
+    const newMember = aChatRoomMember().build();
 
     const result = addMemberToChatRoom(chatRoom, newMember, operatorUserId);
 
@@ -98,17 +88,16 @@ describe('addMemberToChatRoom', () => {
   });
 
   test('should allow member to add another member when operator is valid member', () => {
-    const name = chatRoomNameFromString('Valid Operator Room')._unsafeUnwrap();
     const operatorUserId = generateUserId();
     const anotherUserId = generateUserId();
-    const operatorMember = createChatRoomMember({ userId: operatorUserId });
-    const anotherMember = createChatRoomMember({ userId: anotherUserId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId,
-      initialMembers: new Set([operatorMember, anotherMember]),
-    })._unsafeUnwrap();
-    const newMember = createChatRoomMember({ userId: generateUserId() });
+    const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
+    const anotherMember = aChatRoomMember().withUserId(anotherUserId).build();
+    const chatRoom = aChatRoom()
+      .withName('Valid Operator Room')
+      .withOperatorUserId(operatorUserId)
+      .withMembers(operatorMember, anotherMember)
+      .buildUnsafe();
+    const newMember = aChatRoomMember().build();
 
     // anotherUserId (who is a member) acts as operator
     const result = addMemberToChatRoom(chatRoom, newMember, anotherUserId);

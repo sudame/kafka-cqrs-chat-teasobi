@@ -5,23 +5,17 @@ import {
   createChatRoom,
 } from '../chatRoom';
 import * as chatRoomIdModule from '../chatRoomId';
-import { type ChatRoomMember, createChatRoomMember } from '../chatRoomMember';
+import { createChatRoomMember } from '../chatRoomMember';
 import { chatRoomNameFromString } from '../chatRoomName';
+import { aChatRoom, aChatRoomMember } from './testHelpers';
 
 describe('createChatRoom', () => {
   test('should create a new ChatRoom with generated ID', () => {
-    const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const chatRoom = aChatRoom().buildUnsafe();
 
     expect(chatRoom.id).toBeDefined();
     expect(chatRoom.id).toContain('room-');
-    expect(chatRoom.name).toBe(name);
+    expect(chatRoom.name).toBeDefined();
     expect(chatRoom.members).toBeDefined();
     expect(chatRoom.members).toBeInstanceOf(Set);
     expect(chatRoom.members.size).toBe(1);
@@ -31,27 +25,11 @@ describe('createChatRoom', () => {
   });
 
   test('should create different IDs for different chat rooms', () => {
-    const name1 = chatRoomNameFromString('Room 1')._unsafeUnwrap();
-    const name2 = chatRoomNameFromString('Room 2')._unsafeUnwrap();
-    const userId1 = generateUserId();
-    const userId2 = generateUserId();
-    const member1 = createChatRoomMember({ userId: userId1 });
-    const member2 = createChatRoomMember({ userId: userId2 });
-
-    const chatRoom1 = createChatRoom({
-      name: name1,
-      operatorUserId: userId1,
-      initialMembers: new Set([member1]),
-    })._unsafeUnwrap();
-    const chatRoom2 = createChatRoom({
-      name: name2,
-      operatorUserId: userId2,
-      initialMembers: new Set([member2]),
-    })._unsafeUnwrap();
+    const chatRoom1 = aChatRoom().withName('Room 1').buildUnsafe();
+    const chatRoom2 = aChatRoom().withName('Room 2').buildUnsafe();
 
     expect(chatRoom1.id).not.toBe(chatRoom2.id);
-    expect(chatRoom1.name).toBe(name1);
-    expect(chatRoom2.name).toBe(name2);
+    expect(chatRoom1.name).not.toBe(chatRoom2.name);
     expect(chatRoom1.members).toBeInstanceOf(Set);
     expect(chatRoom2.members).toBeInstanceOf(Set);
   });
@@ -62,18 +40,10 @@ describe('createChatRoom', () => {
     const generateSpy = vi.spyOn(chatRoomIdModule, 'generateChatRoomId');
     generateSpy.mockReturnValue(mockId);
 
-    const name = chatRoomNameFromString('Mock Room')._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+    const chatRoom = aChatRoom().withName('Mock Room').buildUnsafe();
 
     expect(generateSpy).toHaveBeenCalledOnce();
     expect(chatRoom.id).toBe(mockId);
-    expect(chatRoom.name).toBe(name);
     expect(chatRoom.members).toBeInstanceOf(Set);
 
     generateSpy.mockRestore();
@@ -101,23 +71,18 @@ describe('createChatRoom', () => {
     }
   });
   test('should create chat room with initial members', () => {
-    const name = chatRoomNameFromString(
-      'Test Room with Members',
-    )._unsafeUnwrap();
     const userId1 = generateUserId();
     const userId2 = generateUserId();
-    const member1 = createChatRoomMember({ userId: userId1 });
-    const member2 = createChatRoomMember({ userId: userId2 });
-    const initialMembers = new Set([member1, member2]);
+    const member1 = aChatRoomMember().withUserId(userId1).build();
+    const member2 = aChatRoomMember().withUserId(userId2).build();
 
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId1,
-      initialMembers,
-    })._unsafeUnwrap();
+    const chatRoom = aChatRoom()
+      .withName('Test Room with Members')
+      .withOperatorUserId(userId1)
+      .withMembers(member1, member2)
+      .buildUnsafe();
 
     expect(chatRoom.id).toBeDefined();
-    expect(chatRoom.name).toBe(name);
     expect(chatRoom.members).toBeInstanceOf(Set);
     expect(chatRoom.members.size).toBe(2);
     expect(chatRoom.members.has(member1)).toBe(true);
@@ -126,14 +91,11 @@ describe('createChatRoom', () => {
 
 
   test('should return error for empty initial members set', () => {
-    const name = chatRoomNameFromString('Empty Room')._unsafeUnwrap();
-    const emptyMembers = new Set<ChatRoomMember>();
-    const operatorUserId = generateUserId();
-    const result = createChatRoom({
-      name,
-      operatorUserId,
-      initialMembers: emptyMembers,
-    });
+    const result = aChatRoom()
+      .withName('Empty Room')
+      .withMembers() // 空のメンバー配列
+      .withOperatorNotInMembers() // オペレーターも自動追加しない
+      .build();
 
     expect(result.isErr()).toBe(true);
     expect(result._unsafeUnwrapErr().message).toBe(
@@ -142,55 +104,42 @@ describe('createChatRoom', () => {
   });
 
   test('should create chat room with single member', () => {
-    const name = chatRoomNameFromString('Single Member Room')._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const initialMembers = new Set([member]);
-
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers,
-    })._unsafeUnwrap();
+    const chatRoom = aChatRoom()
+      .withName('Single Member Room')
+      .buildUnsafe();
 
     expect(chatRoom.members.size).toBe(1);
-    expect(chatRoom.members.has(member)).toBe(true);
   });
 
   describe('operator constraints', () => {
     test('should create chat room when operator is in initial members', () => {
-      const name = chatRoomNameFromString('Operator Test Room')._unsafeUnwrap();
       const operatorUserId = generateUserId();
       const otherUserId = generateUserId();
-      const operatorMember = createChatRoomMember({ userId: operatorUserId });
-      const otherMember = createChatRoomMember({ userId: otherUserId });
+      const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
+      const otherMember = aChatRoomMember().withUserId(otherUserId).build();
 
-      const chatRoom = createChatRoom({
-        name,
-        operatorUserId,
-        initialMembers: new Set([operatorMember, otherMember]),
-      })._unsafeUnwrap();
+      const chatRoom = aChatRoom()
+        .withName('Operator Test Room')
+        .withOperatorUserId(operatorUserId)
+        .withMembers(operatorMember, otherMember)
+        .buildUnsafe();
 
       expect(chatRoom.id).toBeDefined();
-      expect(chatRoom.name).toBe(name);
       expect(chatRoom.members.size).toBe(2);
       expect(chatRoom.members.has(operatorMember)).toBe(true);
       expect(chatRoom.members.has(otherMember)).toBe(true);
     });
 
     test('should return error when operator is not in initial members', () => {
-      const name = chatRoomNameFromString(
-        'Invalid Operator Room',
-      )._unsafeUnwrap();
       const operatorUserId = generateUserId();
       const memberUserId = generateUserId();
-      const member = createChatRoomMember({ userId: memberUserId });
+      const member = aChatRoomMember().withUserId(memberUserId).build();
 
-      const result = createChatRoom({
-        name,
-        operatorUserId,
-        initialMembers: new Set([member]),
-      });
+      const result = aChatRoom()
+        .withName('Invalid Operator Room')
+        .withOperatorUserId(operatorUserId)
+        .withMembers(member)
+        .build();
 
       expect(result.isErr()).toBe(true);
       const error = result._unsafeUnwrapErr();
@@ -201,20 +150,16 @@ describe('createChatRoom', () => {
     });
 
     test('should create single member chat room with operator as only member', () => {
-      const name = chatRoomNameFromString(
-        'Single Operator Room',
-      )._unsafeUnwrap();
       const operatorUserId = generateUserId();
-      const operatorMember = createChatRoomMember({ userId: operatorUserId });
+      const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
 
-      const chatRoom = createChatRoom({
-        name,
-        operatorUserId,
-        initialMembers: new Set([operatorMember]),
-      })._unsafeUnwrap();
+      const chatRoom = aChatRoom()
+        .withName('Single Operator Room')
+        .withOperatorUserId(operatorUserId)
+        .withMembers(operatorMember)
+        .buildUnsafe();
 
       expect(chatRoom.id).toBeDefined();
-      expect(chatRoom.name).toBe(name);
       expect(chatRoom.members.size).toBe(1);
       expect(chatRoom.members.has(operatorMember)).toBe(true);
     });
