@@ -15,6 +15,9 @@ npm run build
 # テスト実行
 npm run test
 
+# 型チェック
+npx tsc
+
 # コードフォーマット・リント（ルートディレクトリから実行）
 cd ../.. && npx biome format --write . && npx biome lint .
 
@@ -68,6 +71,9 @@ cd ../.. && npm run cspell
   - `generate()`: 新規生成
   - `fromString()`: 文字列からの変換（Result 型を返す）
   - `asString()`: 文字列への変換
+- **テストでの neverthrow 使用方法**:
+  - 条件分岐（`if (result.isOk())`）を使わず、`_unsafeUnwrap()` メソッドを使用
+  - エラーケースでは `_unsafeUnwrapErr()` メソッドを使用
 
 ### ビルド設定
 
@@ -82,6 +88,10 @@ cd ../.. && npm run cspell
 - **create[Entity] 関数の責務**: エンティティの生成時にIDを自動生成すべき。外部からIDを渡すべきではない
   - ✅ 正しい例: `createChatRoomMember()` - IDを内部で自動生成
   - ❌ 誤った例: `createChatRoomMember({ memberId })` - 外部からIDを受け取る
+
+### ドメイン制約
+
+- **ChatRoom**: 必ず1人以上のメンバーが必要。空のメンバーセットでの作成は `CreateChatRoomWithoutInitialMembersError` を返す
 
 ### 実装フロー
 
