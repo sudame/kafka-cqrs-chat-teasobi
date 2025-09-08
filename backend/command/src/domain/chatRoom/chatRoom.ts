@@ -30,6 +30,20 @@ export class ChatRoomMemberAlreadyExistsError extends Error {
   }
 }
 
+export class ChatRoomOperatorNotMemberError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChatRoomOperatorNotMemberError';
+  }
+}
+
+export class ChatRoomCannotRemoveSelfError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChatRoomCannotRemoveSelfError';
+  }
+}
+
 export class ChatRoomMemberNotFoundError extends Error {
   constructor(message: string) {
     super(message);
@@ -41,6 +55,26 @@ interface CreateChatRoomParams {
   name: ChatRoomName;
   operatorUserId: UserId;
   initialMembers: Set<ChatRoomMember>;
+}
+
+function validateOperatorMembership(
+  chatRoom: ChatRoom,
+  operatorUserId: UserId,
+  operation: string,
+): Result<void, ChatRoomOperatorNotMemberError> {
+  const isOperatorMember = Array.from(chatRoom.members).some(
+    (member) => member.userId === operatorUserId,
+  );
+
+  if (!isOperatorMember) {
+    return err(
+      new ChatRoomOperatorNotMemberError(
+        `Operator must be a member of the ChatRoom to ${operation}`,
+      ),
+    );
+  }
+
+  return ok(undefined);
 }
 
 export function createChatRoom(
@@ -78,7 +112,14 @@ export function createChatRoom(
 export function addMemberToChatRoom(
   chatRoom: ChatRoom,
   member: ChatRoomMember,
-): Result<ChatRoom, ChatRoomMemberAlreadyExistsError> {
+  operatorUserId: UserId,
+): Result<ChatRoom, ChatRoomMemberAlreadyExistsError | ChatRoomOperatorNotMemberError> {
+  // Validate operator membership
+  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'add members');
+  if (operatorValidation.isErr()) {
+    return err(operatorValidation.error);
+  }
+
   if (chatRoom.members.has(member)) {
     return err(
       new ChatRoomMemberAlreadyExistsError(
@@ -98,7 +139,23 @@ export function addMemberToChatRoom(
 export function removeMemberFromChatRoom(
   chatRoom: ChatRoom,
   member: ChatRoomMember,
-): Result<ChatRoom, ChatRoomMemberNotFoundError> {
+  operatorUserId: UserId,
+): Result<ChatRoom, ChatRoomMemberNotFoundError | ChatRoomOperatorNotMemberError | ChatRoomCannotRemoveSelfError> {
+  // Validate operator membership
+  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'remove members');
+  if (operatorValidation.isErr()) {
+    return err(operatorValidation.error);
+  }
+
+  // Check if operator is trying to remove themselves
+  if (member.userId === operatorUserId) {
+    return err(
+      new ChatRoomCannotRemoveSelfError(
+        'Cannot remove yourself from the ChatRoom',
+      ),
+    );
+  }
+
   if (!chatRoom.members.has(member)) {
     return err(
       new ChatRoomMemberNotFoundError(
