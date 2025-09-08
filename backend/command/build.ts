@@ -1,6 +1,6 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import esbuild from 'esbuild';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -9,7 +9,6 @@ esbuild.build({
   outfile: path.join(__dirname, 'dist', 'main.js'),
   platform: 'node',
   bundle: true,
-  external: ['kafkajs'],
   sourcemap: 'inline',
   minify: true,
   format: 'esm',

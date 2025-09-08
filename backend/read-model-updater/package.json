@@ -1,8 +1,11 @@
 {
-  "name": "read-model-updater",
+  "name": "rmu",
   "version": "1.0.0",
   "main": "index.js",
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "esbuild": "^0.25.9"
+  },
   "scripts": {
     "build": "tsx build.ts"
   },
