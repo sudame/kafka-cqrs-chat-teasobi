@@ -26,10 +26,21 @@ cd ../.. && npm run cspell
 
 ### ドメイン駆動設計
 
-- **値オブジェクト**: `ChatRoomId` のようなドメイン固有の型を使用
-  - Branded Type パターン（`string & { chatRoomId: never }`）による型安全性の確保
-  - ULID を使用した一意な識別子の生成
-  - `neverthrow` による Result 型を使った明示的なエラーハンドリング
+- **エンティティ**: `ChatRoom` - チャットルームを表現するドメインモデル
+  - `id`: ChatRoomId 値オブジェクト
+  - `name`: ChatRoomName 値オブジェクト
+  - `createChatRoom()`: ファクトリ関数による新規作成
+
+- **値オブジェクト**: ドメイン固有の型を使用
+  - `ChatRoomId`: チャットルーム識別子
+    - Branded Type パターン（`string & { chatRoomId: never }`）による型安全性の確保
+    - ULID を使用した一意な識別子の生成（`room-` プレフィックス付き）
+    - メソッド: `generateChatRoomId()`, `chatRoomIdFromString()`, `chatRoomIdAsString()`
+  - `ChatRoomName`: チャットルーム名
+    - 最大256文字の制限
+    - 空文字列の禁止
+    - `neverthrow` による Result 型を使った明示的なエラーハンドリング
+    - メソッド: `chatRoomNameFromString()`, `chatRoomNameAsString()`
 
 ### 技術スタック
 
