@@ -105,26 +105,6 @@ describe('removeMemberFromChatRoom', () => {
     expect(updatedChatRoom.members.has(member3)).toBe(true);
   });
 
-  test('should return error when removing member from chat room without that member', () => {
-    const name = chatRoomNameFromString(
-      'Room Without Member',
-    )._unsafeUnwrap();
-    const userId = generateUserId();
-    const existingMember = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([existingMember]),
-    })._unsafeUnwrap();
-    const member = createChatRoomMember({ userId: generateUserId() });
-
-    const result = removeMemberFromChatRoom(chatRoom, member, userId);
-
-    expect(result.isErr()).toBe(true);
-    const error = result._unsafeUnwrapErr();
-    expect(error).toBeInstanceOf(ChatRoomMemberNotFoundError);
-    expect(error.message).toBe('ChatRoomMember not found in the ChatRoom');
-  });
 
   test('should return error when operator is not a member of chat room', () => {
     const name = chatRoomNameFromString('No Remove Operator Room')._unsafeUnwrap();

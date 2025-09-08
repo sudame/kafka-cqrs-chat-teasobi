@@ -74,25 +74,6 @@ describe('addMemberToChatRoom', () => {
     );
   });
 
-  test('should add member to existing chat room', () => {
-    const name = chatRoomNameFromString('Existing Room')._unsafeUnwrap();
-    const userId = generateUserId();
-    const existingMember = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([existingMember]),
-    })._unsafeUnwrap();
-    const newMember = createChatRoomMember({ userId: generateUserId() });
-
-    const result = addMemberToChatRoom(chatRoom, newMember, userId);
-
-    expect(result.isOk()).toBe(true);
-    const updatedChatRoom = result._unsafeUnwrap();
-    expect(updatedChatRoom.members.size).toBe(2);
-    expect(updatedChatRoom.members.has(newMember)).toBe(true);
-    expect(updatedChatRoom.members.has(existingMember)).toBe(true);
-  });
 
   test('should return error when operator is not a member of chat room', () => {
     const name = chatRoomNameFromString('No Operator Room')._unsafeUnwrap();

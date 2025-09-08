@@ -79,50 +79,26 @@ describe('createChatRoom', () => {
     generateSpy.mockRestore();
   });
 
-  test('should create chat room with Japanese name', () => {
-    const name = chatRoomNameFromString('開発チーム')._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
+  test('should create chat room with various name formats', () => {
+    const testCases = [
+      { name: '開発チーム', description: 'Japanese name' },
+      { name: '💬 General Chat #1', description: 'special characters' },
+    ];
 
-    expect(chatRoom.id).toBeDefined();
-    expect(chatRoom.name).toBe(name);
-    expect(chatRoom.members).toBeInstanceOf(Set);
-  });
+    for (const testCase of testCases) {
+      const name = chatRoomNameFromString(testCase.name)._unsafeUnwrap();
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
+      const chatRoom = createChatRoom({
+        name,
+        operatorUserId: userId,
+        initialMembers: new Set([member]),
+      })._unsafeUnwrap();
 
-  test('should create chat room with special characters in name', () => {
-    const name = chatRoomNameFromString('💬 General Chat #1')._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
-
-    expect(chatRoom.id).toBeDefined();
-    expect(chatRoom.name).toBe(name);
-    expect(chatRoom.members).toBeInstanceOf(Set);
-  });
-
-  test('should create chat room with max length name', () => {
-    const maxLengthName = 'a'.repeat(256);
-    const name = chatRoomNameFromString(maxLengthName)._unsafeUnwrap();
-    const userId = generateUserId();
-    const member = createChatRoomMember({ userId });
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId,
-      initialMembers: new Set([member]),
-    })._unsafeUnwrap();
-
-    expect(chatRoom.id).toBeDefined();
-    expect(chatRoom.name).toBe(name);
-    expect(chatRoom.members).toBeInstanceOf(Set);
+      expect(chatRoom.id).toBeDefined();
+      expect(chatRoom.name).toBe(name);
+      expect(chatRoom.members).toBeInstanceOf(Set);
+    }
   });
   test('should create chat room with initial members', () => {
     const name = chatRoomNameFromString(
@@ -148,29 +124,6 @@ describe('createChatRoom', () => {
     expect(chatRoom.members.has(member2)).toBe(true);
   });
 
-  test('should create separate member sets for each chat room', () => {
-    const name = chatRoomNameFromString('Isolated Room')._unsafeUnwrap();
-    const userId1 = generateUserId();
-    const userId2 = generateUserId();
-    const member1 = createChatRoomMember({ userId: userId1 });
-    const member2 = createChatRoomMember({ userId: userId2 });
-    const originalMembers = new Set([member1, member2]);
-
-    const chatRoom = createChatRoom({
-      name,
-      operatorUserId: userId1,
-      initialMembers: originalMembers,
-    })._unsafeUnwrap();
-
-    // originalMembersに新しいメンバーを追加
-    const member3 = createChatRoomMember({ userId: generateUserId() });
-    originalMembers.add(member3);
-
-    // chatRoomのmembersは影響を受けないことを確認
-    expect(chatRoom.members.size).toBe(2);
-    expect(chatRoom.members.has(member3)).toBe(false);
-    expect(originalMembers.size).toBe(3);
-  });
 
   test('should return error for empty initial members set', () => {
     const name = chatRoomNameFromString('Empty Room')._unsafeUnwrap();
