@@ -1,23 +1,26 @@
 import { describe, expect, test, vi } from 'vitest';
+import { generateUserId } from '../user/userId';
 import {
   addMemberToChatRoom,
   ChatRoomMemberAlreadyExistsError,
   ChatRoomMemberNotFoundError,
+  CreateChatRoomOperatorNotInMembersError,
   createChatRoom,
   removeMemberFromChatRoom,
 } from './chatRoom';
 import * as chatRoomIdModule from './chatRoomId';
 import { type ChatRoomMember, createChatRoomMember } from './chatRoomMember';
 import { chatRoomNameFromString } from './chatRoomName';
-import { generateUserId } from '../user/userId';
 
 describe('ChatRoom', () => {
   describe('createChatRoom', () => {
     test('should create a new ChatRoom with generated ID', () => {
       const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -32,15 +35,19 @@ describe('ChatRoom', () => {
     test('should create different IDs for different chat rooms', () => {
       const name1 = chatRoomNameFromString('Room 1')._unsafeUnwrap();
       const name2 = chatRoomNameFromString('Room 2')._unsafeUnwrap();
-      const member1 = createChatRoomMember({ userId: generateUserId() });
-      const member2 = createChatRoomMember({ userId: generateUserId() });
+      const userId1 = generateUserId();
+      const userId2 = generateUserId();
+      const member1 = createChatRoomMember({ userId: userId1 });
+      const member2 = createChatRoomMember({ userId: userId2 });
 
       const chatRoom1 = createChatRoom({
         name: name1,
+        operatorUserId: userId1,
         initialMembers: new Set([member1]),
       })._unsafeUnwrap();
       const chatRoom2 = createChatRoom({
         name: name2,
+        operatorUserId: userId2,
         initialMembers: new Set([member2]),
       })._unsafeUnwrap();
 
@@ -58,9 +65,11 @@ describe('ChatRoom', () => {
       generateSpy.mockReturnValue(mockId);
 
       const name = chatRoomNameFromString('Mock Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -74,9 +83,11 @@ describe('ChatRoom', () => {
 
     test('should create chat room with Japanese name', () => {
       const name = chatRoomNameFromString('開発チーム')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -87,9 +98,11 @@ describe('ChatRoom', () => {
 
     test('should create chat room with special characters in name', () => {
       const name = chatRoomNameFromString('💬 General Chat #1')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -101,9 +114,11 @@ describe('ChatRoom', () => {
     test('should create chat room with max length name', () => {
       const maxLengthName = 'a'.repeat(256);
       const name = chatRoomNameFromString(maxLengthName)._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -112,13 +127,18 @@ describe('ChatRoom', () => {
       expect(chatRoom.members).toBeInstanceOf(Set);
     });
     test('should create chat room with initial members', () => {
-      const name = chatRoomNameFromString('Test Room with Members')._unsafeUnwrap();
-      const member1 = createChatRoomMember({ userId: generateUserId() });
-      const member2 = createChatRoomMember({ userId: generateUserId() });
+      const name = chatRoomNameFromString(
+        'Test Room with Members',
+      )._unsafeUnwrap();
+      const userId1 = generateUserId();
+      const userId2 = generateUserId();
+      const member1 = createChatRoomMember({ userId: userId1 });
+      const member2 = createChatRoomMember({ userId: userId2 });
       const initialMembers = new Set([member1, member2]);
 
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId1,
         initialMembers,
       })._unsafeUnwrap();
 
@@ -132,12 +152,15 @@ describe('ChatRoom', () => {
 
     test('should create separate member sets for each chat room', () => {
       const name = chatRoomNameFromString('Isolated Room')._unsafeUnwrap();
-      const member1 = createChatRoomMember({ userId: generateUserId() });
-      const member2 = createChatRoomMember({ userId: generateUserId() });
+      const userId1 = generateUserId();
+      const userId2 = generateUserId();
+      const member1 = createChatRoomMember({ userId: userId1 });
+      const member2 = createChatRoomMember({ userId: userId2 });
       const originalMembers = new Set([member1, member2]);
 
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId1,
         initialMembers: originalMembers,
       })._unsafeUnwrap();
 
@@ -154,22 +177,28 @@ describe('ChatRoom', () => {
     test('should return error for empty initial members set', () => {
       const name = chatRoomNameFromString('Empty Room')._unsafeUnwrap();
       const emptyMembers = new Set<ChatRoomMember>();
+      const operatorUserId = generateUserId();
       const result = createChatRoom({
         name,
+        operatorUserId,
         initialMembers: emptyMembers,
       });
 
       expect(result.isErr()).toBe(true);
-      expect(result._unsafeUnwrapErr().message).toBe('ChatRoom must have at least one member');
+      expect(result._unsafeUnwrapErr().message).toBe(
+        'ChatRoom must have at least one member',
+      );
     });
 
     test('should create chat room with single member', () => {
       const name = chatRoomNameFromString('Single Member Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const initialMembers = new Set([member]);
 
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers,
       })._unsafeUnwrap();
 
@@ -181,9 +210,11 @@ describe('ChatRoom', () => {
   describe('addMemberToChatRoom', () => {
     test('should add a new member to chat room', () => {
       const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
-      const initialMember = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const initialMember = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([initialMember]),
       })._unsafeUnwrap();
 
@@ -201,9 +232,11 @@ describe('ChatRoom', () => {
 
     test('should not modify original chat room', () => {
       const name = chatRoomNameFromString('Original Room')._unsafeUnwrap();
-      const existingMember = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const existingMember = createChatRoomMember({ userId });
       const originalChatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([existingMember]),
       })._unsafeUnwrap();
       const newMember = createChatRoomMember({ userId: generateUserId() });
@@ -218,10 +251,14 @@ describe('ChatRoom', () => {
     });
 
     test('should return error when adding duplicate member', () => {
-      const name = chatRoomNameFromString('Duplicate Test Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const name = chatRoomNameFromString(
+        'Duplicate Test Room',
+      )._unsafeUnwrap();
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -237,9 +274,11 @@ describe('ChatRoom', () => {
 
     test('should add member to existing chat room', () => {
       const name = chatRoomNameFromString('Existing Room')._unsafeUnwrap();
-      const existingMember = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const existingMember = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([existingMember]),
       })._unsafeUnwrap();
       const newMember = createChatRoomMember({ userId: generateUserId() });
@@ -257,10 +296,13 @@ describe('ChatRoom', () => {
   describe('removeMemberFromChatRoom', () => {
     test('should remove existing member from chat room', () => {
       const name = chatRoomNameFromString('Test Room')._unsafeUnwrap();
-      const member1 = createChatRoomMember({ userId: generateUserId() });
-      const member2 = createChatRoomMember({ userId: generateUserId() });
+      const userId1 = generateUserId();
+      const userId2 = generateUserId();
+      const member1 = createChatRoomMember({ userId: userId1 });
+      const member2 = createChatRoomMember({ userId: userId2 });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId1,
         initialMembers: new Set([member1, member2]),
       })._unsafeUnwrap();
 
@@ -277,9 +319,11 @@ describe('ChatRoom', () => {
 
     test('should not modify original chat room', () => {
       const name = chatRoomNameFromString('Original Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const originalChatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -293,11 +337,17 @@ describe('ChatRoom', () => {
     });
 
     test('should return error when removing non-existing member', () => {
-      const name = chatRoomNameFromString('Non-existing Test Room')._unsafeUnwrap();
-      const existingMember = createChatRoomMember({ userId: generateUserId() });
-      const nonExistingMember = createChatRoomMember({ userId: generateUserId() });
+      const name = chatRoomNameFromString(
+        'Non-existing Test Room',
+      )._unsafeUnwrap();
+      const userId1 = generateUserId();
+      const existingMember = createChatRoomMember({ userId: userId1 });
+      const nonExistingMember = createChatRoomMember({
+        userId: generateUserId(),
+      });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId1,
         initialMembers: new Set([existingMember]),
       })._unsafeUnwrap();
 
@@ -306,16 +356,16 @@ describe('ChatRoom', () => {
       expect(result.isErr()).toBe(true);
       const error = result._unsafeUnwrapErr();
       expect(error).toBeInstanceOf(ChatRoomMemberNotFoundError);
-      expect(error.message).toBe(
-        'ChatRoomMember not found in the ChatRoom',
-      );
+      expect(error.message).toBe('ChatRoomMember not found in the ChatRoom');
     });
 
     test('should remove member from chat room with single member', () => {
       const name = chatRoomNameFromString('Single Member Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -328,10 +378,14 @@ describe('ChatRoom', () => {
     });
 
     test('should return error when removing member from chat room without that member', () => {
-      const name = chatRoomNameFromString('Room Without Member')._unsafeUnwrap();
-      const existingMember = createChatRoomMember({ userId: generateUserId() });
+      const name = chatRoomNameFromString(
+        'Room Without Member',
+      )._unsafeUnwrap();
+      const userId = generateUserId();
+      const existingMember = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([existingMember]),
       })._unsafeUnwrap();
       const member = createChatRoomMember({ userId: generateUserId() });
@@ -341,18 +395,18 @@ describe('ChatRoom', () => {
       expect(result.isErr()).toBe(true);
       const error = result._unsafeUnwrapErr();
       expect(error).toBeInstanceOf(ChatRoomMemberNotFoundError);
-      expect(error.message).toBe(
-        'ChatRoomMember not found in the ChatRoom',
-      );
+      expect(error.message).toBe('ChatRoomMember not found in the ChatRoom');
     });
   });
 
   describe('ChatRoom type', () => {
     test('should have correct structure', () => {
       const name = chatRoomNameFromString('Type Test Room')._unsafeUnwrap();
-      const member = createChatRoomMember({ userId: generateUserId() });
+      const userId = generateUserId();
+      const member = createChatRoomMember({ userId });
       const chatRoom = createChatRoom({
         name,
+        operatorUserId: userId,
         initialMembers: new Set([member]),
       })._unsafeUnwrap();
 
@@ -360,6 +414,69 @@ describe('ChatRoom', () => {
       expect(chatRoom).toHaveProperty('name');
       expect(chatRoom).toHaveProperty('members');
       expect(Object.keys(chatRoom)).toHaveLength(3);
+    });
+  });
+
+  describe('operator constraints', () => {
+    test('should create chat room when operator is in initial members', () => {
+      const name = chatRoomNameFromString('Operator Test Room')._unsafeUnwrap();
+      const operatorUserId = generateUserId();
+      const otherUserId = generateUserId();
+      const operatorMember = createChatRoomMember({ userId: operatorUserId });
+      const otherMember = createChatRoomMember({ userId: otherUserId });
+
+      const chatRoom = createChatRoom({
+        name,
+        operatorUserId,
+        initialMembers: new Set([operatorMember, otherMember]),
+      })._unsafeUnwrap();
+
+      expect(chatRoom.id).toBeDefined();
+      expect(chatRoom.name).toBe(name);
+      expect(chatRoom.members.size).toBe(2);
+      expect(chatRoom.members.has(operatorMember)).toBe(true);
+      expect(chatRoom.members.has(otherMember)).toBe(true);
+    });
+
+    test('should return error when operator is not in initial members', () => {
+      const name = chatRoomNameFromString(
+        'Invalid Operator Room',
+      )._unsafeUnwrap();
+      const operatorUserId = generateUserId();
+      const memberUserId = generateUserId();
+      const member = createChatRoomMember({ userId: memberUserId });
+
+      const result = createChatRoom({
+        name,
+        operatorUserId,
+        initialMembers: new Set([member]),
+      });
+
+      expect(result.isErr()).toBe(true);
+      const error = result._unsafeUnwrapErr();
+      expect(error).toBeInstanceOf(CreateChatRoomOperatorNotInMembersError);
+      expect(error.message).toBe(
+        'Operator user must be included in initial members',
+      );
+    });
+
+    test('should create single member chat room with operator as only member', () => {
+      const name = chatRoomNameFromString(
+        'Single Operator Room',
+      )._unsafeUnwrap();
+      const operatorUserId = generateUserId();
+      const operatorMember = createChatRoomMember({ userId: operatorUserId });
+
+      const chatRoom = createChatRoom({
+        name,
+        operatorUserId,
+        initialMembers: new Set([operatorMember]),
+      })._unsafeUnwrap();
+
+      expect(chatRoom.id).toBeDefined();
+      expect(chatRoom.name).toBe(name);
+      expect(chatRoom.members.size).toBe(1);
+      expect(chatRoom.members.has(operatorMember)).toBe(true);
     });
   });
 });

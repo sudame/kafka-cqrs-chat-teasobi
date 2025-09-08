@@ -28,9 +28,7 @@ export function userIdFromString(
   const ulidPart = id.slice('user-'.length);
   if (!isValidUlid(ulidPart)) {
     return err(
-      new UserIdValidationError(
-        `UserId must ends with ULID, but got: "${id}"`,
-      ),
+      new UserIdValidationError(`UserId must ends with ULID, but got: "${id}"`),
     );
   }
 

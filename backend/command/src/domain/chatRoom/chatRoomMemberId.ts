@@ -37,6 +37,8 @@ export function chatRoomMemberIdFromString(
   return ok(id as ChatRoomMemberId);
 }
 
-export function chatRoomMemberIdToString(chatRoomMemberId: ChatRoomMemberId): string {
+export function chatRoomMemberIdToString(
+  chatRoomMemberId: ChatRoomMemberId,
+): string {
   return chatRoomMemberId as string;
 }

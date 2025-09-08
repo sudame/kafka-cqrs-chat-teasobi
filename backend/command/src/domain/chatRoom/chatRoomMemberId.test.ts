@@ -1,7 +1,10 @@
 // cSpell:words 01F8MECHZX3TBDSZ7XRADM79XE
 
 import { describe, expect, test } from 'vitest';
-import { chatRoomMemberIdFromString, chatRoomMemberIdToString } from './chatRoomMemberId';
+import {
+  chatRoomMemberIdFromString,
+  chatRoomMemberIdToString,
+} from './chatRoomMemberId';
 
 describe('ChatRoomMemberId', () => {
   test('fromString with valid id', () => {
@@ -36,7 +39,9 @@ describe('ChatRoomMemberId', () => {
   });
 
   test('toString returns the original string', () => {
-    const validId = chatRoomMemberIdFromString('member-01F8MECHZX3TBDSZ7XRADM79XE');
+    const validId = chatRoomMemberIdFromString(
+      'member-01F8MECHZX3TBDSZ7XRADM79XE',
+    );
     expect(chatRoomMemberIdToString(validId._unsafeUnwrap())).toBe(
       'member-01F8MECHZX3TBDSZ7XRADM79XE',
     );

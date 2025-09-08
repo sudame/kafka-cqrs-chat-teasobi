@@ -15,9 +15,7 @@ describe('UserName', () => {
     expect(result.isErr()).toBe(true);
 
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(Error);
-    expect(result._unsafeUnwrapErr().message).toBe(
-      'UserName cannot be empty',
-    );
+    expect(result._unsafeUnwrapErr().message).toBe('UserName cannot be empty');
   });
 
   test('fromString with name at max length', () => {
