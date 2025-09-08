@@ -2,11 +2,13 @@ import { err, ok, type Result } from 'neverthrow';
 import type { UserId } from '../user/userId';
 import { type ChatRoomId, generateChatRoomId } from './chatRoomId';
 import type { ChatRoomMember } from './chatRoomMember';
+import type { ChatRoomMessage } from './chatRoomMessage';
 import type { ChatRoomName } from './chatRoomName';
 export type ChatRoom = {
   id: ChatRoomId;
   name: ChatRoomName;
   members: Set<ChatRoomMember>;
+  messages: ChatRoomMessage[];
 };
 
 export class CreateChatRoomWithoutInitialMembersError extends Error {
@@ -106,7 +108,7 @@ export function createChatRoom(
     );
   }
 
-  return ok({ id, name: params.name, members: new Set(params.initialMembers) });
+  return ok({ id, name: params.name, members: new Set(params.initialMembers), messages: [] });
 }
 
 export function addMemberToChatRoom(

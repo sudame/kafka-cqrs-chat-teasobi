@@ -32,6 +32,9 @@ describe('ChatRoom', () => {
       expect(chatRoom.members).toBeDefined();
       expect(chatRoom.members).toBeInstanceOf(Set);
       expect(chatRoom.members.size).toBe(1);
+      expect(chatRoom.messages).toBeDefined();
+      expect(chatRoom.messages).toBeInstanceOf(Array);
+      expect(chatRoom.messages.length).toBe(0);
     });
 
     test('should create different IDs for different chat rooms', () => {
@@ -553,7 +556,8 @@ describe('ChatRoom', () => {
       expect(chatRoom).toHaveProperty('id');
       expect(chatRoom).toHaveProperty('name');
       expect(chatRoom).toHaveProperty('members');
-      expect(Object.keys(chatRoom)).toHaveLength(3);
+      expect(chatRoom).toHaveProperty('messages');
+      expect(Object.keys(chatRoom)).toHaveLength(4);
     });
   });
 
