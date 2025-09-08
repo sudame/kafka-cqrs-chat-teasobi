@@ -9,6 +9,13 @@ export type ChatRoom = {
   members: Set<ChatRoomMember>;
 };
 
+export class CreateChatRoomWithoutInitialMembersError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CreateChatRoomWithoutMembersError';
+  }
+}
+
 export class ChatRoomMemberAlreadyExistsError extends Error {
   constructor(message: string) {
     super(message);
@@ -28,9 +35,19 @@ interface CreateChatRoomParams {
   initialMembers: Set<ChatRoomMember>;
 }
 
-export function createChatRoom(params: CreateChatRoomParams): ChatRoom {
+export function createChatRoom(
+  params: CreateChatRoomParams,
+): Result<ChatRoom, CreateChatRoomWithoutInitialMembersError> {
   const id = generateChatRoomId();
-  return { id, name: params.name, members: new Set(params.initialMembers) };
+  if (params.initialMembers.size === 0) {
+    return err(
+      new CreateChatRoomWithoutInitialMembersError(
+        'ChatRoom must have at least one member',
+      ),
+    );
+  }
+
+  return ok({ id, name: params.name, members: new Set(params.initialMembers) });
 }
 
 export function addMemberToChatRoom(
