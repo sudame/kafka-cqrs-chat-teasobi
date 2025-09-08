@@ -10,11 +10,11 @@ export class ChatRoomIdValidationError extends Error {
   }
 }
 
-export function generate(): ChatRoomId {
+export function generateChatRoomId(): ChatRoomId {
   return `room-${ulid()}` as ChatRoomId;
 }
 
-export function fromString(
+export function chatRoomIdFromString(
   id: string,
 ): Result<ChatRoomId, ChatRoomIdValidationError> {
   if (!id.startsWith('room-')) {
@@ -37,6 +37,6 @@ export function fromString(
   return ok(id as ChatRoomId);
 }
 
-export function asString(chatRoomId: ChatRoomId): string {
+export function chatRoomIdToString(chatRoomId: ChatRoomId): string {
   return chatRoomId as string;
 }
