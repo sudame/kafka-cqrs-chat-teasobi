@@ -1,8 +1,15 @@
 import { describe, expect, test, vi } from 'vitest';
-import { createChatRoom } from './chatRoom';
+import {
+  addMemberToChatRoom,
+  ChatRoomMemberAlreadyExistsError,
+  ChatRoomMemberNotFoundError,
+  createChatRoom,
+  removeMemberFromChatRoom,
+} from './chatRoom';
 import * as chatRoomIdModule from './chatRoomId';
 import { type ChatRoomMember, createChatRoomMember } from './chatRoomMember';
 import { chatRoomNameFromString } from './chatRoomName';
+import { generateUserId } from '../user/userId';
 
 describe('ChatRoom', () => {
   describe('createChatRoom', () => {
@@ -127,8 +134,8 @@ describe('ChatRoom', () => {
       expect(nameResult.isOk()).toBe(true);
 
       if (nameResult.isOk()) {
-        const member1 = createChatRoomMember();
-        const member2 = createChatRoomMember();
+        const member1 = createChatRoomMember({ userId: generateUserId() });
+        const member2 = createChatRoomMember({ userId: generateUserId() });
         const initialMembers = new Set([member1, member2]);
 
         const chatRoom = createChatRoom({
@@ -150,8 +157,8 @@ describe('ChatRoom', () => {
       expect(nameResult.isOk()).toBe(true);
 
       if (nameResult.isOk()) {
-        const member1 = createChatRoomMember();
-        const member2 = createChatRoomMember();
+        const member1 = createChatRoomMember({ userId: generateUserId() });
+        const member2 = createChatRoomMember({ userId: generateUserId() });
         const originalMembers = new Set([member1, member2]);
 
         const chatRoom = createChatRoom({
@@ -160,7 +167,7 @@ describe('ChatRoom', () => {
         });
 
         // originalMembersに新しいメンバーを追加
-        const member3 = createChatRoomMember();
+        const member3 = createChatRoomMember({ userId: generateUserId() });
         originalMembers.add(member3);
 
         // chatRoomのmembersは影響を受けないことを確認
@@ -192,7 +199,7 @@ describe('ChatRoom', () => {
       expect(nameResult.isOk()).toBe(true);
 
       if (nameResult.isOk()) {
-        const member = createChatRoomMember();
+        const member = createChatRoomMember({ userId: generateUserId() });
         const initialMembers = new Set([member]);
 
         const chatRoom = createChatRoom({
@@ -202,6 +209,222 @@ describe('ChatRoom', () => {
 
         expect(chatRoom.members.size).toBe(1);
         expect(chatRoom.members.has(member)).toBe(true);
+      }
+    });
+  });
+
+  describe('addMemberToChatRoom', () => {
+    test('should add a new member to chat room', () => {
+      const nameResult = chatRoomNameFromString('Test Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const initialMember = createChatRoomMember({ userId: generateUserId() });
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([initialMember]),
+        });
+
+        const newMember = createChatRoomMember({ userId: generateUserId() });
+        const result = addMemberToChatRoom(chatRoom, newMember);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(updatedChatRoom.members.size).toBe(2);
+          expect(updatedChatRoom.members.has(initialMember)).toBe(true);
+          expect(updatedChatRoom.members.has(newMember)).toBe(true);
+          expect(updatedChatRoom.id).toBe(chatRoom.id);
+          expect(updatedChatRoom.name).toBe(chatRoom.name);
+        }
+      }
+    });
+
+    test('should not modify original chat room', () => {
+      const nameResult = chatRoomNameFromString('Original Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const originalChatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set(),
+        });
+        const newMember = createChatRoomMember({ userId: generateUserId() });
+
+        const result = addMemberToChatRoom(originalChatRoom, newMember);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(originalChatRoom.members.size).toBe(0);
+          expect(updatedChatRoom.members.size).toBe(1);
+          expect(originalChatRoom.members).not.toBe(updatedChatRoom.members);
+        }
+      }
+    });
+
+    test('should return error when adding duplicate member', () => {
+      const nameResult = chatRoomNameFromString('Duplicate Test Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const member = createChatRoomMember({ userId: generateUserId() });
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([member]),
+        });
+
+        const result = addMemberToChatRoom(chatRoom, member);
+
+        expect(result.isErr()).toBe(true);
+        if (result.isErr()) {
+          expect(result.error).toBeInstanceOf(ChatRoomMemberAlreadyExistsError);
+          expect(result.error.message).toBe(
+            'ChatRoomMember already exists in the ChatRoom',
+          );
+        }
+      }
+    });
+
+    test('should add member to empty chat room', () => {
+      const nameResult = chatRoomNameFromString('Empty Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set(),
+        });
+        const newMember = createChatRoomMember({ userId: generateUserId() });
+
+        const result = addMemberToChatRoom(chatRoom, newMember);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(updatedChatRoom.members.size).toBe(1);
+          expect(updatedChatRoom.members.has(newMember)).toBe(true);
+        }
+      }
+    });
+  });
+
+  describe('removeMemberFromChatRoom', () => {
+    test('should remove existing member from chat room', () => {
+      const nameResult = chatRoomNameFromString('Test Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const member1 = createChatRoomMember({ userId: generateUserId() });
+        const member2 = createChatRoomMember({ userId: generateUserId() });
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([member1, member2]),
+        });
+
+        const result = removeMemberFromChatRoom(chatRoom, member1);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(updatedChatRoom.members.size).toBe(1);
+          expect(updatedChatRoom.members.has(member1)).toBe(false);
+          expect(updatedChatRoom.members.has(member2)).toBe(true);
+          expect(updatedChatRoom.id).toBe(chatRoom.id);
+          expect(updatedChatRoom.name).toBe(chatRoom.name);
+        }
+      }
+    });
+
+    test('should not modify original chat room', () => {
+      const nameResult = chatRoomNameFromString('Original Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const member = createChatRoomMember({ userId: generateUserId() });
+        const originalChatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([member]),
+        });
+
+        const result = removeMemberFromChatRoom(originalChatRoom, member);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(originalChatRoom.members.size).toBe(1);
+          expect(updatedChatRoom.members.size).toBe(0);
+          expect(originalChatRoom.members).not.toBe(updatedChatRoom.members);
+        }
+      }
+    });
+
+    test('should return error when removing non-existing member', () => {
+      const nameResult = chatRoomNameFromString('Non-existing Test Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const existingMember = createChatRoomMember({ userId: generateUserId() });
+        const nonExistingMember = createChatRoomMember({ userId: generateUserId() });
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([existingMember]),
+        });
+
+        const result = removeMemberFromChatRoom(chatRoom, nonExistingMember);
+
+        expect(result.isErr()).toBe(true);
+        if (result.isErr()) {
+          expect(result.error).toBeInstanceOf(ChatRoomMemberNotFoundError);
+          expect(result.error.message).toBe(
+            'ChatRoomMember not found in the ChatRoom',
+          );
+        }
+      }
+    });
+
+    test('should remove member from chat room with single member', () => {
+      const nameResult = chatRoomNameFromString('Single Member Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const member = createChatRoomMember({ userId: generateUserId() });
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set([member]),
+        });
+
+        const result = removeMemberFromChatRoom(chatRoom, member);
+
+        expect(result.isOk()).toBe(true);
+        if (result.isOk()) {
+          const updatedChatRoom = result.value;
+          expect(updatedChatRoom.members.size).toBe(0);
+          expect(updatedChatRoom.members.has(member)).toBe(false);
+        }
+      }
+    });
+
+    test('should return error when removing member from empty chat room', () => {
+      const nameResult = chatRoomNameFromString('Empty Room');
+      expect(nameResult.isOk()).toBe(true);
+
+      if (nameResult.isOk()) {
+        const chatRoom = createChatRoom({
+          name: nameResult.value,
+          initialMembers: new Set(),
+        });
+        const member = createChatRoomMember({ userId: generateUserId() });
+
+        const result = removeMemberFromChatRoom(chatRoom, member);
+
+        expect(result.isErr()).toBe(true);
+        if (result.isErr()) {
+          expect(result.error).toBeInstanceOf(ChatRoomMemberNotFoundError);
+          expect(result.error.message).toBe(
+            'ChatRoomMember not found in the ChatRoom',
+          );
+        }
       }
     });
   });
