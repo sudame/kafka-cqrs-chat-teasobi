@@ -31,6 +31,10 @@ cd ../.. && npm run cspell
   - `name`: ChatRoomName 値オブジェクト
   - `createChatRoom()`: ファクトリ関数による新規作成
 
+- **エンティティ**: `ChatRoomMember` - チャットルームメンバーを表現するドメインモデル
+  - `memberId`: ChatRoomMemberId 値オブジェクト
+  - `createChatRoomMember()`: ファクトリ関数による新規作成（ID は自動生成）
+
 - **値オブジェクト**: ドメイン固有の型を使用
   - `ChatRoomId`: チャットルーム識別子
     - Branded Type パターン（`string & { chatRoomId: never }`）による型安全性の確保
@@ -41,6 +45,10 @@ cd ../.. && npm run cspell
     - 空文字列の禁止
     - `neverthrow` による Result 型を使った明示的なエラーハンドリング
     - メソッド: `chatRoomNameFromString()`, `chatRoomNameAsString()`
+  - `ChatRoomMemberId`: チャットルームメンバー識別子
+    - Branded Type パターンによる型安全性の確保
+    - ULID を使用した一意な識別子の生成（`member-` プレフィックス付き）
+    - メソッド: `generateChatRoomMemberId()`, `chatRoomMemberIdFromString()`, `chatRoomMemberIdToString()`
 
 ### 技術スタック
 
@@ -66,3 +74,18 @@ cd ../.. && npm run cspell
 - ESM モジュール形式
 - Node.js プラットフォーム向け
 - ソースマップ付きで minify 化
+
+## 開発ベストプラクティス
+
+### ドメインエンティティの設計原則
+
+- **create[Entity] 関数の責務**: エンティティの生成時にIDを自動生成すべき。外部からIDを渡すべきではない
+  - ✅ 正しい例: `createChatRoomMember()` - IDを内部で自動生成
+  - ❌ 誤った例: `createChatRoomMember({ memberId })` - 外部からIDを受け取る
+
+### 実装フロー
+
+1. **既存実装の調査**: 類似機能がある場合は必ず参考にしてパターンを踏襲する
+2. **段階的実装**: 値オブジェクト → エンティティ → テストの順序で、依存関係を意識した実装
+3. **包括的テスト**: 正常系・異常系・境界値を網羅するテストケースを作成
+4. **ファイル分割**: 関連する機能は独立したファイルとして作成し、モジュラリティを保つ

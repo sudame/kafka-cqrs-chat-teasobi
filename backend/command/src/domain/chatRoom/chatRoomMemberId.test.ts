@@ -5,7 +5,7 @@ import { chatRoomMemberIdFromString, chatRoomMemberIdToString } from './chatRoom
 
 describe('ChatRoomMemberId', () => {
   test('fromString with valid id', () => {
-    const validId = 'chat-room-member-01F8MECHZX3TBDSZ7XRADM79XE';
+    const validId = 'member-01F8MECHZX3TBDSZ7XRADM79XE';
     const result = chatRoomMemberIdFromString(validId);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
@@ -20,25 +20,25 @@ describe('ChatRoomMemberId', () => {
 
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(Error);
     expect(result._unsafeUnwrapErr().message).toBe(
-      `ChatRoomMemberId must start with "chat-room-member-", but got: "invalid-01F8MECHZX3TBDSZ7XRADM79XE"`,
+      `ChatRoomMemberId must start with "member-", but got: "invalid-01F8MECHZX3TBDSZ7XRADM79XE"`,
     );
   });
 
   test('fromString with invalid ULID part', () => {
-    const invalidId = 'chat-room-member-INVALID_ULID_PART';
+    const invalidId = 'member-INVALID_ULID_PART';
     const result = chatRoomMemberIdFromString(invalidId);
     expect(result.isErr()).toBe(true);
 
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(Error);
     expect(result._unsafeUnwrapErr().message).toBe(
-      `ChatRoomMemberId must ends with ULID, but got: "chat-room-member-INVALID_ULID_PART"`,
+      `ChatRoomMemberId must ends with ULID, but got: "member-INVALID_ULID_PART"`,
     );
   });
 
-  test('asString returns the original string', () => {
-    const validId = chatRoomMemberIdFromString('chat-room-member-01F8MECHZX3TBDSZ7XRADM79XE');
+  test('toString returns the original string', () => {
+    const validId = chatRoomMemberIdFromString('member-01F8MECHZX3TBDSZ7XRADM79XE');
     expect(chatRoomMemberIdToString(validId._unsafeUnwrap())).toBe(
-      'chat-room-member-01F8MECHZX3TBDSZ7XRADM79XE',
+      'member-01F8MECHZX3TBDSZ7XRADM79XE',
     );
   });
 });

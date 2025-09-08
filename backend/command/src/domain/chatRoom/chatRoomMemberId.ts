@@ -11,21 +11,21 @@ export class ChatRoomMemberIdValidationError extends Error {
 }
 
 export function generateChatRoomMemberId(): ChatRoomMemberId {
-  return `chat-room-member-${ulid()}` as ChatRoomMemberId;
+  return `member-${ulid()}` as ChatRoomMemberId;
 }
 
 export function chatRoomMemberIdFromString(
   id: string,
 ): Result<ChatRoomMemberId, ChatRoomMemberIdValidationError> {
-  if (!id.startsWith('chat-room-member-')) {
+  if (!id.startsWith('member-')) {
     return err(
       new ChatRoomMemberIdValidationError(
-        `ChatRoomMemberId must start with "chat-room-member-", but got: "${id}"`,
+        `ChatRoomMemberId must start with "member-", but got: "${id}"`,
       ),
     );
   }
 
-  const ulidPart = id.slice('chat-room-member-'.length);
+  const ulidPart = id.slice('member-'.length);
   if (!isValidUlid(ulidPart)) {
     return err(
       new ChatRoomMemberIdValidationError(
