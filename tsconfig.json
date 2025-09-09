@@ -1,11 +1,12 @@
 {
   "extends": "@tsconfig/strictest",
   "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "target": "esnext",
     "noEmit": true,
     "checkJs": false,
+    "skipLibCheck": true,
     "paths": {
       "@share/*": ["./backend/share/*"]
     }

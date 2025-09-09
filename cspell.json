@@ -5,6 +5,7 @@
     "confluentinc",
     "healthcheck",
     "kafkajs",
+    "Kysely",
     "neverthrow",
     "partitioner",
     "Partitioners",

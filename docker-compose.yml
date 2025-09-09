@@ -163,7 +163,11 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      KAFKA_BROKER: kafka:29092
+      DB_HOST: tidb-tidb
+      DB_PORT: '4000'
+      DB_USER: root
+      DB_PASSWORD: ''
+      DB_NAME: chotwork
 
   read-model-updater-server:
     build:

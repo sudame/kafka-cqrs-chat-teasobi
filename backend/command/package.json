@@ -13,6 +13,8 @@
   "dependencies": {
     "@hono/node-server": "^1.19.1",
     "hono": "^4.9.6",
+    "kysely": "^0.28.5",
+    "mysql2": "^3.14.5",
     "neverthrow": "^8.2.0",
     "ulid": "^3.0.1",
     "zod": "^4.1.5"
