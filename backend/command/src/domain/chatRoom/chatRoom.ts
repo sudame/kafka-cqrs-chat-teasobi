@@ -2,13 +2,11 @@ import { err, ok, type Result } from 'neverthrow';
 import type { UserId } from '../user/userId';
 import { type ChatRoomId, generateChatRoomId } from './chatRoomId';
 import type { ChatRoomMember } from './chatRoomMember';
-import type { ChatRoomMessage } from './chatRoomMessage';
 import type { ChatRoomName } from './chatRoomName';
 export type ChatRoom = {
   id: ChatRoomId;
   name: ChatRoomName;
   members: Set<ChatRoomMember>;
-  messages: ChatRoomMessage[];
 };
 
 export class CreateChatRoomWithoutInitialMembersError extends Error {
@@ -115,16 +113,27 @@ export function createChatRoom(
     );
   }
 
-  return ok({ id, name: params.name, members: new Set(params.initialMembers), messages: [] });
+  return ok({
+    id,
+    name: params.name,
+    members: new Set(params.initialMembers),
+  });
 }
 
 export function addMemberToChatRoom(
   chatRoom: ChatRoom,
   member: ChatRoomMember,
   operatorUserId: UserId,
-): Result<ChatRoom, ChatRoomMemberAlreadyExistsError | ChatRoomOperatorNotMemberError> {
+): Result<
+  ChatRoom,
+  ChatRoomMemberAlreadyExistsError | ChatRoomOperatorNotMemberError
+> {
   // Validate operator membership
-  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'add members');
+  const operatorValidation = validateOperatorMembership(
+    chatRoom,
+    operatorUserId,
+    'add members',
+  );
   if (operatorValidation.isErr()) {
     return err(operatorValidation.error);
   }
@@ -149,9 +158,18 @@ export function removeMemberFromChatRoom(
   chatRoom: ChatRoom,
   member: ChatRoomMember,
   operatorUserId: UserId,
-): Result<ChatRoom, ChatRoomMemberNotFoundError | ChatRoomOperatorNotMemberError | ChatRoomCannotRemoveSelfError> {
+): Result<
+  ChatRoom,
+  | ChatRoomMemberNotFoundError
+  | ChatRoomOperatorNotMemberError
+  | ChatRoomCannotRemoveSelfError
+> {
   // Validate operator membership
-  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'remove members');
+  const operatorValidation = validateOperatorMembership(
+    chatRoom,
+    operatorUserId,
+    'remove members',
+  );
   if (operatorValidation.isErr()) {
     return err(operatorValidation.error);
   }
@@ -178,32 +196,5 @@ export function removeMemberFromChatRoom(
   return ok({
     ...chatRoom,
     members: updatedMembers,
-  });
-}
-
-export function postMessage(
-  chatRoom: ChatRoom,
-  message: ChatRoomMessage,
-  operatorUserId: UserId,
-): Result<ChatRoom, ChatRoomOperatorNotMemberError | ChatRoomMessageAuthorMismatchError> {
-  // Validate operator membership
-  const operatorValidation = validateOperatorMembership(chatRoom, operatorUserId, 'post messages');
-  if (operatorValidation.isErr()) {
-    return err(operatorValidation.error);
-  }
-
-  // Check if operator is the message author
-  if (message.author.userId !== operatorUserId) {
-    return err(
-      new ChatRoomMessageAuthorMismatchError(
-        'Message author must match the operator',
-      ),
-    );
-  }
-
-  const updatedMessages = [...chatRoom.messages, message];
-  return ok({
-    ...chatRoom,
-    messages: updatedMessages,
   });
 }

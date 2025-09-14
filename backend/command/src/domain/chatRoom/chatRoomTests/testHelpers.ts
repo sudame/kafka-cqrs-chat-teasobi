@@ -1,5 +1,8 @@
 import type { Result } from 'neverthrow';
 import { expect } from 'vitest';
+import { createMessage } from '../../message/message';
+import { messageContentFromString } from '../../message/messageContent';
+import type { User } from '../../user/user';
 import type { UserId } from '../../user/userId';
 import { generateUserId } from '../../user/userId';
 import {
@@ -7,9 +10,9 @@ import {
   type CreateChatRoomOperatorNotInMembersError,
   createChatRoom,
 } from '../chatRoom';
+import type { ChatRoomId } from '../chatRoomId';
+import { generateChatRoomId } from '../chatRoomId';
 import { type ChatRoomMember, createChatRoomMember } from '../chatRoomMember';
-import { createChatRoomMessage } from '../chatRoomMessage';
-import { chatRoomMessageContentFromString } from '../chatRoomMessageContent';
 import { chatRoomNameFromString } from '../chatRoomName';
 
 /**
@@ -85,13 +88,14 @@ export class ChatRoomBuilder {
 }
 
 /**
- * ChatRoomMessageBuilder - メッセージ作成を柔軟に行うビルダー
+ * MessageBuilder - メッセージ作成を柔軟に行うビルダー
  */
-export class ChatRoomMessageBuilder {
-  private author: ChatRoomMember | null = null;
+export class MessageBuilder {
+  private author: User | null = null;
   private content = 'Test message';
+  private chatRoomId = generateChatRoomId();
 
-  withAuthor(author: ChatRoomMember) {
+  withAuthor(author: User) {
     this.author = author;
     return this;
   }
@@ -101,13 +105,19 @@ export class ChatRoomMessageBuilder {
     return this;
   }
 
+  withChatRoomId(chatRoomId: ChatRoomId) {
+    this.chatRoomId = chatRoomId;
+    return this;
+  }
+
   build() {
     if (!this.author) {
       throw new Error('Author must be set before building message');
     }
 
-    const messageContent = chatRoomMessageContentFromString(this.content);
-    return createChatRoomMessage({
+    const messageContent = messageContentFromString(this.content);
+    return createMessage({
+      chatRoomId: this.chatRoomId,
       author: this.author,
       content: messageContent,
     });
@@ -125,8 +135,8 @@ export function aChatRoom() {
   return new ChatRoomBuilder();
 }
 
-export function aChatRoomMessage() {
-  return new ChatRoomMessageBuilder();
+export function aMessage() {
+  return new MessageBuilder();
 }
 
 /**

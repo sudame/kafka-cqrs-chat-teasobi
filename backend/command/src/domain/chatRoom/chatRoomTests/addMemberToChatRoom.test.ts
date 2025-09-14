@@ -61,9 +61,7 @@ describe('addMemberToChatRoom', () => {
     expect(result.isErr()).toBe(true);
     const error = result._unsafeUnwrapErr();
     expect(error).toBeInstanceOf(ChatRoomMemberAlreadyExistsError);
-    expect(error.message).toBe(
-      'ChatRoomMember already exists in the ChatRoom',
-    );
+    expect(error.message).toBe('ChatRoomMember already exists in the ChatRoom');
   });
 
   test('should return error when operator is not a member of chat room', () => {

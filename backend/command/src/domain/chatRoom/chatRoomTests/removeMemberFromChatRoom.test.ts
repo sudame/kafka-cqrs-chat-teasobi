@@ -62,7 +62,11 @@ describe('removeMemberFromChatRoom', () => {
       .withMembers(existingMember)
       .buildUnsafe();
 
-    const result = removeMemberFromChatRoom(chatRoom, nonExistingMember, userId1);
+    const result = removeMemberFromChatRoom(
+      chatRoom,
+      nonExistingMember,
+      userId1,
+    );
 
     expect(result.isErr()).toBe(true);
     const error = result._unsafeUnwrapErr();
@@ -104,7 +108,11 @@ describe('removeMemberFromChatRoom', () => {
       .withMembers(existingMember)
       .buildUnsafe();
 
-    const result = removeMemberFromChatRoom(chatRoom, existingMember, operatorUserId);
+    const result = removeMemberFromChatRoom(
+      chatRoom,
+      existingMember,
+      operatorUserId,
+    );
 
     expect(result.isErr()).toBe(true);
     const error = result._unsafeUnwrapErr();
@@ -118,14 +126,20 @@ describe('removeMemberFromChatRoom', () => {
     const operatorUserId = generateUserId();
     const memberToRemoveUserId = generateUserId();
     const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
-    const memberToRemove = aChatRoomMember().withUserId(memberToRemoveUserId).build();
+    const memberToRemove = aChatRoomMember()
+      .withUserId(memberToRemoveUserId)
+      .build();
     const chatRoom = aChatRoom()
       .withName('Valid Remove Operator Room')
       .withOperatorUserId(operatorUserId)
       .withMembers(operatorMember, memberToRemove)
       .buildUnsafe();
 
-    const result = removeMemberFromChatRoom(chatRoom, memberToRemove, operatorUserId);
+    const result = removeMemberFromChatRoom(
+      chatRoom,
+      memberToRemove,
+      operatorUserId,
+    );
 
     expect(result.isOk()).toBe(true);
     const updatedChatRoom = result._unsafeUnwrap();

@@ -1,12 +1,12 @@
 // cSpell:words 01F8MECHZX3TBDSZ7XRADM79XE
 
 import { describe, expect, test } from 'vitest';
-import { chatRoomMessageIdFromString, chatRoomMessageIdToString } from './chatRoomMessageId';
+import { messageIdFromString, messageIdToString } from './messageId';
 
 describe('ChatRoomMessageId', () => {
   test('fromString with valid id', () => {
     const validId = 'message-01F8MECHZX3TBDSZ7XRADM79XE';
-    const result = chatRoomMessageIdFromString(validId);
+    const result = messageIdFromString(validId);
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toBe(validId);
@@ -15,7 +15,7 @@ describe('ChatRoomMessageId', () => {
 
   test('fromString with invalid prefix', () => {
     const invalidId = 'invalid-01F8MECHZX3TBDSZ7XRADM79XE';
-    const result = chatRoomMessageIdFromString(invalidId);
+    const result = messageIdFromString(invalidId);
     expect(result.isErr()).toBe(true);
 
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(Error);
@@ -26,7 +26,7 @@ describe('ChatRoomMessageId', () => {
 
   test('fromString with invalid ULID part', () => {
     const invalidId = 'message-INVALID_ULID_PART';
-    const result = chatRoomMessageIdFromString(invalidId);
+    const result = messageIdFromString(invalidId);
     expect(result.isErr()).toBe(true);
 
     expect(result._unsafeUnwrapErr()).toBeInstanceOf(Error);
@@ -36,8 +36,8 @@ describe('ChatRoomMessageId', () => {
   });
 
   test('toString returns the original string', () => {
-    const validId = chatRoomMessageIdFromString('message-01F8MECHZX3TBDSZ7XRADM79XE');
-    expect(chatRoomMessageIdToString(validId._unsafeUnwrap())).toBe(
+    const validId = messageIdFromString('message-01F8MECHZX3TBDSZ7XRADM79XE');
+    expect(messageIdToString(validId._unsafeUnwrap())).toBe(
       'message-01F8MECHZX3TBDSZ7XRADM79XE',
     );
   });

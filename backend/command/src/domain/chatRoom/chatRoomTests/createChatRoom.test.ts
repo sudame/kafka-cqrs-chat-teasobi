@@ -19,9 +19,6 @@ describe('createChatRoom', () => {
     expect(chatRoom.members).toBeDefined();
     expect(chatRoom.members).toBeInstanceOf(Set);
     expect(chatRoom.members.size).toBe(1);
-    expect(chatRoom.messages).toBeDefined();
-    expect(chatRoom.messages).toBeInstanceOf(Array);
-    expect(chatRoom.messages.length).toBe(0);
   });
 
   test('should create different IDs for different chat rooms', () => {
@@ -89,7 +86,6 @@ describe('createChatRoom', () => {
     expect(chatRoom.members.has(member2)).toBe(true);
   });
 
-
   test('should return error for empty initial members set', () => {
     const result = aChatRoom()
       .withName('Empty Room')
@@ -104,9 +100,7 @@ describe('createChatRoom', () => {
   });
 
   test('should create chat room with single member', () => {
-    const chatRoom = aChatRoom()
-      .withName('Single Member Room')
-      .buildUnsafe();
+    const chatRoom = aChatRoom().withName('Single Member Room').buildUnsafe();
 
     expect(chatRoom.members.size).toBe(1);
   });
@@ -115,7 +109,9 @@ describe('createChatRoom', () => {
     test('should create chat room when operator is in initial members', () => {
       const operatorUserId = generateUserId();
       const otherUserId = generateUserId();
-      const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
+      const operatorMember = aChatRoomMember()
+        .withUserId(operatorUserId)
+        .build();
       const otherMember = aChatRoomMember().withUserId(otherUserId).build();
 
       const chatRoom = aChatRoom()
@@ -151,7 +147,9 @@ describe('createChatRoom', () => {
 
     test('should create single member chat room with operator as only member', () => {
       const operatorUserId = generateUserId();
-      const operatorMember = aChatRoomMember().withUserId(operatorUserId).build();
+      const operatorMember = aChatRoomMember()
+        .withUserId(operatorUserId)
+        .build();
 
       const chatRoom = aChatRoom()
         .withName('Single Operator Room')

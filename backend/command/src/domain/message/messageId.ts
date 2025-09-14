@@ -1,25 +1,25 @@
 import { err, ok, type Result } from 'neverthrow';
 import { isValid as isValidUlid, ulid } from 'ulid';
 
-export type ChatRoomMessageId = string & { chatRoomMessageId: never };
+export type MessageId = string & { chatRoomMessageId: never };
 
-export class ChatRoomMessageIdValidationError extends Error {
+export class MessageIdValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ChatRoomMessageIdValidationError';
   }
 }
 
-export function generateChatRoomMessageId(): ChatRoomMessageId {
-  return `message-${ulid()}` as ChatRoomMessageId;
+export function generateMessageId(): MessageId {
+  return `message-${ulid()}` as MessageId;
 }
 
-export function chatRoomMessageIdFromString(
+export function messageIdFromString(
   id: string,
-): Result<ChatRoomMessageId, ChatRoomMessageIdValidationError> {
+): Result<MessageId, MessageIdValidationError> {
   if (!id.startsWith('message-')) {
     return err(
-      new ChatRoomMessageIdValidationError(
+      new MessageIdValidationError(
         `ChatRoomMessageId must start with "message-", but got: "${id}"`,
       ),
     );
@@ -28,15 +28,15 @@ export function chatRoomMessageIdFromString(
   const ulidPart = id.slice('message-'.length);
   if (!isValidUlid(ulidPart)) {
     return err(
-      new ChatRoomMessageIdValidationError(
+      new MessageIdValidationError(
         `ChatRoomMessageId must ends with ULID, but got: "${id}"`,
       ),
     );
   }
 
-  return ok(id as ChatRoomMessageId);
+  return ok(id as MessageId);
 }
 
-export function chatRoomMessageIdToString(chatRoomMessageId: ChatRoomMessageId): string {
+export function messageIdToString(chatRoomMessageId: MessageId): string {
   return chatRoomMessageId as string;
 }
