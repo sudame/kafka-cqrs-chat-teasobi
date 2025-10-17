@@ -1,4 +1,4 @@
-FROM node:24 AS builder
+FROM node:25 AS builder
 
 WORKDIR /app
 
@@ -11,6 +11,6 @@ RUN --mount=type=cache,target=/root/.npm npm install
 COPY . . 
 RUN npm -w backend/query run build
 
-FROM node:24
+FROM node:25
 WORKDIR /app
 COPY --from=builder /app/backend/query/dist/main.js .
