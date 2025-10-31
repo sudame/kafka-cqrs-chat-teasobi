@@ -74,7 +74,7 @@ services:
     restart: on-failure
 
   tidb-tidb:
-    image: pingcap/tidb:v8.5.2
+    image: pingcap/tidb:v8.5.3
     command:
       - --store=tikv
       - --path=tidb-pd:2379
