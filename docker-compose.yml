@@ -32,7 +32,7 @@ services:
       retries: 15 # 15回リトライ (合計約150秒待つ)
 
   tidb-pd:
-    image: pingcap/pd:v8.5.2
+    image: pingcap/pd:v8.5.3
     ports:
       - '2379:2379'
     command:
